@@ -67,7 +67,7 @@ jobs:
           branch: "release-prep"
           delete-branch: true
           title: "Release prep v${{ steps.get_version.outputs.version }}"
-          base: "main
+          base: "main"
           body: |
             Automated release-prep through from commit ${{ github.sha }}.
           labels: "maintenance"
