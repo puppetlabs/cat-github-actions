@@ -1,0 +1,41 @@
+# This is a generic workflow for releasing a Puppet module.
+# It requires that the caller sets `secrets: inherit` to ensure
+# that secrets are visible from steps in this workflow.
+name: "Release"
+
+on:
+  workflow_call:
+
+jobs:
+  release:
+    name: "Release"
+    runs-on: "ubuntu-latest"
+    steps:
+
+      - name: "Checkout"
+        uses: "actions/checkout@v3"
+        with:
+          ref: "${{ github.ref }}"
+          clean: true
+          fetch-depth: 0
+
+      - name: "Get version"
+        id: "get_version"
+        run: |
+          echo "::set-output name=version::$(jq --raw-output .version metadata.json)"
+
+      - name: "PDK build"
+        uses: "docker://puppet/pdk:nightly"
+        with:
+          args: "build"
+
+      - name: "Create release"
+        run: |
+          gh release create v${{ steps.get_version.outputs.version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Publish module"
+        uses: "docker://puppet/pdk:nightly"
+        with:
+          args: 'release publish --forge-token ${{ secrets.FORGE_API_KEY }} --force'
