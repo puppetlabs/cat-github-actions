@@ -1,7 +1,7 @@
 # This is a generic workflow for releasing gems.
 # It requires that the caller sets `secrets: inherit` to ensure
 # that secrets are visible from steps in this workflow.
-name: "Release"
+name: "Gem Release"
 
 on:
   workflow_call:
