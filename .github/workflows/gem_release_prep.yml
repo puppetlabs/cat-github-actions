@@ -6,12 +6,12 @@ name: "Release Prep"
 
 on:
   workflow_call:
-   inputs:
-    target:
-      description: "The target for the release. This can be a commit sha or a branch."
-      required: false
-      default: "main"
-      type: "string"
+    inputs:
+      target:
+        description: "The target for the release. This can be a commit sha or a branch."
+        required: false
+        default: "main"
+        type: "string"
 
 jobs:
   release_prep:
@@ -71,4 +71,3 @@ jobs:
           body: |
             Automated release-prep through from commit ${{ github.sha }}.
           labels: "maintenance"
-

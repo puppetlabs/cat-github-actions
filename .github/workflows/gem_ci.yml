@@ -1,7 +1,7 @@
 name: "ci"
 
 on:
- workflow_call:
+  workflow_call:
     inputs:
       with_acceptance:
         description: "Run an acceptance test job."
@@ -32,7 +32,7 @@ jobs:
           echo ::endgroup::
 
       - name: "rubocop"
-        run : |
+        run: |
           bundle exec rubocop
 
       - name: "spec"
