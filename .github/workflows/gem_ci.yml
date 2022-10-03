@@ -34,7 +34,7 @@ jobs:
 
       - name: "rubocop"
         run: |
-          bundle exec rubocop
+          bundle exec rubocop --format github
 
       - name: "spec"
         run: |
