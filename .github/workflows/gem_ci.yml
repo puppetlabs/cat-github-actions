@@ -1,4 +1,5 @@
-name: "ci"
+# This is a generic workflow for gem CI operations.
+name: "Gem CI"
 
 on:
   workflow_call:
@@ -33,7 +34,7 @@ jobs:
 
       - name: "rubocop"
         run: |
-          bundle exec rubocop
+          bundle exec rubocop --format github
 
       - name: "spec"
         run: |

@@ -1,7 +1,7 @@
 # This is a generic workflow for releasing gems.
 # It requires that the caller sets `secrets: inherit` to ensure
 # that secrets are visible from steps in this workflow.
-name: "Release"
+name: "Gem Release"
 
 on:
   workflow_call:
@@ -16,6 +16,7 @@ jobs:
   release:
     name: "Release"
     runs-on: "ubuntu-latest"
+    if: github.repository_owner == 'puppetlabs'
 
     steps:
 
@@ -45,7 +46,7 @@ jobs:
 
       - name: "Build"
         run: |
-          bundle exec rake build
+          gem build *.gemspec
 
       - name: "Create release"
         run: |
@@ -55,4 +56,6 @@ jobs:
 
       - name: "Publish gem"
         run: |
-          bundle exec rake release
+          gem push ./pkg/*.gem
+        env:
+          GEM_HOST_API_KEY: '${{ secrets.GEM_HOST_API_KEY }}'

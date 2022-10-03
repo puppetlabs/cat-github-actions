@@ -1,5 +1,5 @@
 # This is a generic workflow for Puppet module CI operations.
-name: "ci"
+name: "Module CI"
 
 on:
   workflow_call:

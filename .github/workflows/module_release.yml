@@ -1,7 +1,7 @@
 # This is a generic workflow for releasing a Puppet module.
 # It requires that the caller sets `secrets: inherit` to ensure
 # that secrets are visible from steps in this workflow.
-name: "Release"
+name: "Module Release"
 
 on:
   workflow_call:
@@ -10,6 +10,8 @@ jobs:
   release:
     name: "Release"
     runs-on: "ubuntu-latest"
+    if: github.repository_owner == 'puppetlabs'
+
     steps:
 
       - name: "Checkout"
