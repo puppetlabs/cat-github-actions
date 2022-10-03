@@ -5,12 +5,12 @@ name: "Release"
 
 on:
   workflow_call:
-   inputs:
-    target:
-      description: "The target for the release. This can be a commit sha or a branch."
-      required: false
-      default: "main"
-      type: "string"
+    inputs:
+      target:
+        description: "The target for the release. This can be a commit sha or a branch."
+        required: false
+        default: "main"
+        type: "string"
 
 jobs:
   release:
