@@ -45,9 +45,6 @@ jobs:
     name: "acceptance"
     runs-on: "ubuntu-latest"
     needs: "spec"
-    strategy:
-      matrix:
-        puppet: ["puppet6", "puppet7"]
 
     steps:
 
