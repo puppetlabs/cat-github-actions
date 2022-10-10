@@ -4,6 +4,10 @@ name: "Gem CI"
 on:
   workflow_call:
     inputs:
+      target:
+        description: "The current target passed down from a matrix"
+        required: false
+        type: "string"
       with_acceptance:
         description: "Run an acceptance test job."
         required: false
@@ -62,6 +66,10 @@ jobs:
           echo ::group::bundler environment
           bundle env
           echo ::endgroup::
+
+      - name: "export environment"
+        run: |
+          echo "MATRIX_TARGET=${{ inputs.target }} >> $GITHUB_ENV"
 
       - name: "execute acceptance tests"
         run: |
