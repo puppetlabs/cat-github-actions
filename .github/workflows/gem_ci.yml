@@ -66,19 +66,8 @@ jobs:
           bundle env
           echo ::endgroup::
 
-      - name: "provision"
+      - name: "execute acceptance tests"
         run: |
-          bundle exec rake 'litmus:provision[docker, ubuntu]'
-
-      - name: "install agent"
-        run: |
-          bundle exec rake 'litmus:install_agent[${{ matrix.puppet }}]'
-
-      - name: "install module"
-        run: |
-          bundle exec rake 'litmus:install_modules_from_directory[./spec/fixtures/acceptance/modules]'
-          bundle exec rake litmus:install_gems
-
-      - name: "execute tests"
-        run: |
-          bundle exec rake litmus:acceptance:parallel
+          # This generic task to run acceptance tests.
+          # It should be overridden in the Rakefile.
+          bundle exec rake acceptance
