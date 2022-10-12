@@ -3,12 +3,6 @@ name: "Gem CI"
 
 on:
   workflow_call:
-    inputs:
-      with_acceptance:
-        description: "Run an acceptance test job."
-        required: false
-        default: true
-        type: "boolean"
 
 jobs:
   spec:
@@ -39,46 +33,3 @@ jobs:
       - name: "spec"
         run: |
           bundle exec rake spec
-
-  acceptance:
-    if: "${{ inputs.with_acceptance == true }}"
-    name: "acceptance"
-    runs-on: "ubuntu-latest"
-    needs: "spec"
-    strategy:
-      matrix:
-        puppet: ["puppet6", "puppet7"]
-
-    steps:
-
-      - name: "checkout"
-        uses: "actions/checkout@v3"
-
-      - name: "setup ruby"
-        uses: "ruby/setup-ruby@v1"
-        with:
-          ruby-version: "2.7"
-          bundler-cache: true
-
-      - name: "bundle environment"
-        run: |
-          echo ::group::bundler environment
-          bundle env
-          echo ::endgroup::
-
-      - name: "provision"
-        run: |
-          bundle exec rake 'litmus:provision[docker, ubuntu]'
-
-      - name: "install agent"
-        run: |
-          bundle exec rake 'litmus:install_agent[${{ matrix.puppet }}]'
-
-      - name: "install module"
-        run: |
-          bundle exec rake 'litmus:install_modules_from_directory[./spec/fixtures/acceptance/modules]'
-          bundle exec rake litmus:install_gems
-
-      - name: "execute tests"
-        run: |
-          bundle exec rake litmus:acceptance:parallel

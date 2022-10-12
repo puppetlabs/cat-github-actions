@@ -1,0 +1,42 @@
+# This is a generic workflow for gem Acceptance operations.
+name: "Gem Acceptance"
+
+on:
+  workflow_call:
+    inputs:
+      target:
+        description: "The current target passed down from a matrix"
+        required: false
+        type: "string"
+
+jobs:
+  acceptance:
+    name: "acceptance"
+    runs-on: "ubuntu-latest"
+
+    steps:
+
+      - name: "checkout"
+        uses: "actions/checkout@v3"
+
+      - name: "setup ruby"
+        uses: "ruby/setup-ruby@v1"
+        with:
+          ruby-version: "2.7"
+          bundler-cache: true
+
+      - name: "bundle environment"
+        run: |
+          echo ::group::bundler environment
+          bundle env
+          echo ::endgroup::
+
+      - name: "export environment"
+        run: |
+          echo "MATRIX_TARGET=${{ inputs.target }} >> $GITHUB_ENV"
+
+      - name: "execute acceptance tests"
+        run: |
+          # This generic task to run acceptance tests.
+          # It should be overridden in the Rakefile.
+          bundle exec rake acceptance
