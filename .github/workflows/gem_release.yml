@@ -46,7 +46,7 @@ jobs:
 
       - name: "Build"
         run: |
-          gem build *.gemspec
+          bundle exec rake build
 
       - name: "Create release"
         run: |
