@@ -50,7 +50,7 @@ jobs:
 
       - name: "Create release"
         run: |
-          gh release create v${{ steps.get_version.outputs.version }} ./pkg/*.gem
+          gh release create v${{ steps.get_version.outputs.version }} ./pkg/*.gem --title v${{ steps.get_version.outputs.version }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
