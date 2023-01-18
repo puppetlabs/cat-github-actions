@@ -3,6 +3,12 @@ name: "Gem CI"
 
 on:
   workflow_call:
+    inputs:
+      ruby_version:
+        description: "The target Ruby version."
+        required: false
+        default: "2.7"
+        type: "string"
 
 jobs:
   spec:
@@ -17,7 +23,7 @@ jobs:
       - name: "setup ruby"
         uses: "ruby/setup-ruby@v1"
         with:
-          ruby-version: "2.7"
+          ruby-version: "${{ github.event.inputs.ruby_version }}"
           bundler-cache: true
 
       - name: "bundle environment"
