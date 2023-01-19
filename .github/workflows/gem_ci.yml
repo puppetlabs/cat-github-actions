@@ -23,7 +23,7 @@ jobs:
       - name: "setup ruby"
         uses: "ruby/setup-ruby@v1"
         with:
-          ruby-version: "${{ github.event.inputs.ruby_version }}"
+          ruby-version: ${{ inputs.ruby_version }}
           bundler-cache: true
 
       - name: "bundle environment"
