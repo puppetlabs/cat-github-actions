@@ -31,6 +31,8 @@ jobs:
 
       - name: "setup ruby"
         uses: "ruby/setup-ruby@v1"
+        env:
+          PUPPET_GEM_VERSION: ${{ inputs.puppet_gem_version }}
         with:
           ruby-version: ${{ inputs.ruby_version }}
           bundler-cache: true
