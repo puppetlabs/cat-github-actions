@@ -9,6 +9,11 @@ on:
         required: false
         default: "2.7"
         type: "string"
+      puppet_gem_version:
+        description: "Specifies the version of the Puppet gem to be installed"
+        required: false
+        default: "~> 7.0"
+        type: "string"
 
 jobs:
   spec:
@@ -19,6 +24,10 @@ jobs:
 
       - name: "checkout"
         uses: "actions/checkout@v3"
+
+      - name: "export environment"
+        run: |
+          echo "PUPPET_GEM_VERSION=${{ inputs.puppet_gem_version }} >> $GITHUB_ENV"
 
       - name: "setup ruby"
         uses: "ruby/setup-ruby@v1"
