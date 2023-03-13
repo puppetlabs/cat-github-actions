@@ -73,5 +73,5 @@ jobs:
           title: "Release prep v${{ github.event.inputs.version }}"
           base: "main"
           body: |
-            Automated release-prep through from commit ${{ github.sha }}.
+            Automated release-prep from commit ${{ github.sha }}.
           labels: "maintenance"
