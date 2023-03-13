@@ -43,12 +43,10 @@ jobs:
           bundle env
           echo ::endgroup::
 
-      - name: "Get version"
-        id: "get_version"
+      - name: "Update Version"
         run: |
           current_version=$(ruby -e "require 'rubygems'; puts Gem::Specification::load(Dir.glob('*.gemspec').first).version.to_s")
-          gem_name=$(ruby -e "require 'rubygems'; puts Gem::Specification::load(Dir.glob('*.gemspec').first).name.to_s")
-          sed -i "s/$current_version/${{ github.event.inputs.version }}/g" ./lib/$gem_name/version.rb
+          sed -i "s/$current_version/${{ github.event.inputs.version }}/g" $(find . -path './lib/**' -name 'version.rb' -not -path "vendor/*")
 
       - name: "Generate changelog"
         run: |
@@ -75,5 +73,5 @@ jobs:
           title: "Release prep v${{ github.event.inputs.version }}"
           base: "main"
           body: |
-            Automated release-prep through from commit ${{ github.sha }}.
+            Automated release-prep from commit ${{ github.sha }}.
           labels: "maintenance"
