@@ -14,11 +14,16 @@ on:
         required: false
         default: "~> 7.0"
         type: "string"
+      runs_on:
+        description: "The operating system used for the runner."
+        required: false
+        default: "ubuntu-latest"
+        type: "string"
 
 jobs:
   spec:
     name: "spec"
-    runs-on: "ubuntu-latest"
+    runs-on: ${{ inputs.runs_on }}
 
     steps:
 
