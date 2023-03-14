@@ -14,6 +14,11 @@ on:
         required: false
         default: "~> 7.0"
         type: "string"
+      rake_task:
+        description: "The name of the rake task that executes tests"
+        required: false
+        default: "spec"
+        type: "string"
       runs_on:
         description: "The operating system used for the runner."
         required: false
@@ -54,4 +59,4 @@ jobs:
 
       - name: "spec"
         run: |
-          bundle exec rake spec
+          bundle exec rake ${{ inputs.rake_task }}
