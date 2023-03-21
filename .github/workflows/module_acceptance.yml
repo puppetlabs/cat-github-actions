@@ -62,8 +62,7 @@ jobs:
       - name: "Provision environment"
         run: |
           if [[ "${{matrix.platforms.provider}}" == "provision::docker" ]]; then
-            DOCKER_RUN_OPTS="docker_run_opts: ['--volume /lib/modules/$(uname -r):/lib/modules/$(uname -r)'\, \
-            '--volume /sys/fs/cgroup:/sys/fs/cgroup:rw'\, '--cgroupns=host']"
+            DOCKER_RUN_OPTS="docker_run_opts: {'--volume': '/lib/modules/$(uname -r):/lib/modules/$(uname -r)'}"
           else
             DOCKER_RUN_OPTS=''
           fi
