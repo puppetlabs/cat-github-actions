@@ -3,12 +3,18 @@ name: "Module Acceptance"
 
 on:
   workflow_call:
+    inputs:
+      runs_on:
+        description: "The operating system used for the runner."
+        required: false
+        default: "ubuntu-latest"
+        type: "string"
 
 jobs:
 
   setup_matrix:
     name: "Setup Test Matrix"
-    runs-on: "ubuntu-latest"
+    runs-on: ${{ inputs.runs_on }}
     outputs:
       acceptance_matrix: ${{ steps.get-matrix.outputs.matrix }}
 
@@ -35,9 +41,9 @@ jobs:
           bundle exec matrix_from_metadata_v2
 
   acceptance:
-    name: "Acceptance tests (${{matrix.platforms.label}}, ${{matrix.collection}}"
+    name: "Acceptance tests (${{matrix.platforms.label}}, ${{matrix.collection}})"
     needs: "setup_matrix"
-    runs-on: "ubuntu-latest"
+    runs-on: ${{ inputs.runs_on }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson( needs.setup_matrix.outputs.acceptance_matrix ) }}
