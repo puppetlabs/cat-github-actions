@@ -4,11 +4,11 @@ name: "Module Acceptance"
 on:
   workflow_call:
     inputs:
-        runs_on:
-          description: "The operating system used for the runner."
-          required: false
-          default: "ubuntu-latest"
-          type: "string"
+      runs_on:
+        description: "The operating system used for the runner."
+        required: false
+        default: "ubuntu-latest"
+        type: "string"
 
 jobs:
 
@@ -41,7 +41,7 @@ jobs:
           bundle exec matrix_from_metadata_v2
 
   acceptance:
-    name: "Acceptance tests (${{matrix.platforms.label}}, ${{matrix.collection}}"
+    name: "Acceptance tests (${{matrix.platforms.label}}, ${{matrix.collection}})"
     needs: "setup_matrix"
     runs-on: ${{ inputs.runs_on }}
     strategy:

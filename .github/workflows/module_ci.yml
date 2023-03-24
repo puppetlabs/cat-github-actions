@@ -3,12 +3,12 @@ name: "Module CI"
 
 on:
   workflow_call:
-      inputs:
-        runs_on:
-          description: "The operating system used for the runner."
-          required: false
-          default: "ubuntu-latest"
-          type: "string"
+    inputs:
+      runs_on:
+        description: "The operating system used for the runner."
+        required: false
+        default: "ubuntu-latest"
+        type: "string"
 
 jobs:
   setup_matrix:
