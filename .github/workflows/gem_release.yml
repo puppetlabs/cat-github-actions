@@ -42,7 +42,7 @@ jobs:
       - name: "Get version"
         id: "get_version"
         run: |
-          echo "::set-output name=version::$(ruby -e "require 'rubygems'; puts Gem::Specification::load(Dir.glob('*.gemspec').first).version.to_s")"
+          echo "version=$(ruby -e "require 'rubygems'; puts Gem::Specification::load(Dir.glob('*.gemspec').first).version.to_s")" >> $GITHUB_OUTPUT
 
       - name: "Build"
         run: |
