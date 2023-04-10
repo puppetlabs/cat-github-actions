@@ -45,7 +45,7 @@ jobs:
           git commit -m "Release prep v${{ steps.get_version.outputs.version }}"
 
       - name: "Create pull Request"
-        uses: "peter-evans/create-pull-request@v4"
+        uses: "peter-evans/create-pull-request@v5"
         if: ${{ steps.check.outputs.release == 'true' }}
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
