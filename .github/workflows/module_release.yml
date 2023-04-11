@@ -33,7 +33,7 @@ jobs:
 
       - name: "Create release"
         run: |
-          gh release create v${{ steps.get_version.outputs.version }}
+          gh release create v${{ steps.get_version.outputs.version }} --title v${{ steps.get_version.outputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
