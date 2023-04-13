@@ -38,6 +38,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: "Publish module"
-        uses: "docker://puppet/pdk:2.6.1.0"
+        uses: "docker://puppet/pdk:2.7.1.0"
         with:
           args: 'release publish --forge-token ${{ secrets.FORGE_API_KEY }} --force'
