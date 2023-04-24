@@ -20,7 +20,7 @@ jobs:
           fetch-depth: 0
 
       - name: "PDK release prep"
-        uses: "docker://puppet/pdk:2.7.1.0"
+        uses: "docker://puppet/pdk:nightly"
         with:
           args: 'release prep --force'
         env:
