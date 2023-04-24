@@ -27,7 +27,7 @@ jobs:
           echo "version=$(jq --raw-output .version metadata.json)" >> $GITHUB_OUTPUT
 
       - name: "PDK build"
-        uses: "docker://puppet/pdk:2.7.1.0"
+        uses: "docker://puppet/pdk:nightly"
         with:
           args: "build"
 
@@ -38,6 +38,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: "Publish module"
-        uses: "docker://puppet/pdk:2.7.1.0"
+        uses: "docker://puppet/pdk:nightly"
         with:
           args: 'release publish --forge-token ${{ secrets.FORGE_API_KEY }} --force'
