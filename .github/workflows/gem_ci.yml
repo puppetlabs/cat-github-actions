@@ -12,7 +12,7 @@ on:
       puppet_gem_version:
         description: "Specifies the version of the Puppet gem to be installed"
         required: false
-        default: "~> 7.0"
+        default: "~> 7.24"
         type: "string"
       rake_task:
         description: "The name of the rake task that executes tests"
