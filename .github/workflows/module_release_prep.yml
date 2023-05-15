@@ -6,6 +6,11 @@ name: "Module Release Prep"
 
 on:
   workflow_call:
+    inputs:
+      version:
+        description: "Module version to be released."
+        required: true
+        type: "string"
 
 jobs:
   release_prep:
@@ -19,12 +24,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: "PDK release prep"
-        uses: "docker://puppet/pdk:nightly"
-        with:
-          args: 'release prep --force'
+      - name: "Generate changelog"
+        run: |
+          export GH_HOST=github.com
+          gh extension install chelnak/gh-changelog
+          gh changelog new --next-version v${{ github.event.inputs.version }}
         env:
-          CHANGELOG_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Update metadata.json"
+        run: |
+          current_version=$(jq --raw-output .version metadata.json)
+          # Update version in metadata.json, only matching first occurrence
+          sed -i "0,/$current_version/s//${{ github.event.inputs.version }}/" $(find . -name 'metadata.json')
 
       - name: "Get version"
         id: "get_version"
