@@ -9,6 +9,11 @@ on:
         required: false
         default: "ubuntu-latest"
         type: "string"
+      matrix:
+        description: "The matrix of platforms to test."
+        required: false
+        default: ''
+        type: "string"
 
 jobs:
 
@@ -35,10 +40,16 @@ jobs:
           bundle env
           echo ::endgroup::
 
-      - name: Setup Spec Test Matrix
+      - name: Setup Test Matrix
         id: get-matrix
         run: |
-          bundle exec matrix_from_metadata_v2
+          # if no matrix supplied as input, then run matrix_from_metadata_v2
+          if [[ -z '${{ inputs.matrix }}' ]]; then
+            bundle exec matrix_from_metadata_v2
+          else
+            echo ${{ inputs.matrix }} >> matrix.json
+            echo "matrix=`cat matrix.json`" >> $GITHUB_OUTPUT
+          fi
 
   acceptance:
     name: "Acceptance tests (${{matrix.platforms.label}}, ${{matrix.collection}})"
