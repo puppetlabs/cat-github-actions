@@ -12,6 +12,7 @@ on:
 
 jobs:
   setup_matrix:
+    if: github.repository_owner == 'puppetlabs'
     name: "Setup Test Matrix"
     runs-on: ${{ inputs.runs_on }}
     outputs:
@@ -40,6 +41,7 @@ jobs:
           bundle exec matrix_from_metadata_v2
 
   spec:
+    if: github.repository_owner == 'puppetlabs'
     name: "Spec tests (Puppet: ${{matrix.puppet_version}}, Ruby Ver: ${{matrix.ruby_version}})"
     needs: "setup_matrix"
     runs-on: ${{ inputs.runs_on }}

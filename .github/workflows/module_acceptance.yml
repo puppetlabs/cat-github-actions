@@ -18,6 +18,7 @@ on:
 jobs:
 
   setup_matrix:
+    if: github.repository_owner == 'puppetlabs'
     name: "Setup Test Matrix"
     runs-on: ${{ inputs.runs_on }}
     outputs:
@@ -52,6 +53,7 @@ jobs:
           fi
 
   acceptance:
+    if: github.repository_owner == 'puppetlabs'
     name: "Acceptance tests (${{matrix.platforms.label}}, ${{matrix.collection}})"
     needs: "setup_matrix"
     runs-on: ${{ inputs.runs_on }}
