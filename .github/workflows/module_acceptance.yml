@@ -55,6 +55,7 @@ jobs:
     name: "Acceptance tests (${{matrix.platforms.label}}, ${{matrix.collection}})"
     needs: "setup_matrix"
     runs-on: ${{ inputs.runs_on }}
+    timeout-minutes: 180
     strategy:
       fail-fast: false
       matrix: ${{ fromJson( needs.setup_matrix.outputs.acceptance_matrix ) }}
