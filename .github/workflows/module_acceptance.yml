@@ -9,8 +9,8 @@ on:
         required: false
         default: "ubuntu-latest"
         type: "string"
-      matrix:
-        description: "The matrix of platforms to test."
+      flags:
+        description: "Additional flags to pass to matrix_from_metadata_v2."
         required: false
         default: ''
         type: "string"
@@ -43,13 +43,7 @@ jobs:
       - name: Setup Test Matrix
         id: get-matrix
         run: |
-          # if no matrix supplied as input, then run matrix_from_metadata_v2
-          if [[ -z '${{ inputs.matrix }}' ]]; then
-            bundle exec matrix_from_metadata_v2
-          else
-            echo ${{ inputs.matrix }} >> matrix.json
-            echo "matrix=`cat matrix.json`" >> $GITHUB_OUTPUT
-          fi
+          bundle exec matrix_from_metadata_v2 ${{ inputs.flags }}
 
   acceptance:
     name: "Acceptance tests (${{matrix.platforms.label}}, ${{matrix.collection}})"
