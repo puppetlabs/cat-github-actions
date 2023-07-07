@@ -9,6 +9,11 @@ on:
         required: false
         default: "ubuntu-latest"
         type: "string"
+      flags:
+        description: "Additional flags to pass to matrix_from_metadata_v2."
+        required: false
+        default: ''
+        type: "string"
 
 jobs:
   setup_matrix:
@@ -37,7 +42,7 @@ jobs:
       - name: Setup Spec Test Matrix
         id: get-matrix
         run: |
-          bundle exec matrix_from_metadata_v2
+          bundle exec matrix_from_metadata_v2 ${{ inputs.flags }}
 
   spec:
     name: "Spec tests (Puppet: ${{matrix.puppet_version}}, Ruby Ver: ${{matrix.ruby_version}})"
