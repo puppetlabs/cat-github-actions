@@ -1,6 +1,6 @@
 name: Labeller
 
-on:    
+on:
   workflow_call:
     inputs:
       label_name:
@@ -21,14 +21,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Label issues or pull requests
+        id: labeller
         uses: puppetlabs/community-labeller@v0
         with:
-          label_name: ${{ inputs.label_name }}
-          label_color: ${{ inputs.label_color }}
-          org_membership: ${{ inputs.org_membership }}
+          label_name: ${{ github.event.inputs.label_name }}
+          label_color: ${{ github.event.inputs.label_color }}
+          org_membership: ${{ github.event.inputs.org_membership }}
           token: ${{ secrets.IAC_COMMUNITY_LABELER }}
 
   labelValidator:
+    needs: communityLabeller
     name: Validate label exists
     runs-on: ubuntu-latest
     steps:
@@ -47,11 +49,13 @@ jobs:
               // Log found label names
               for (const label of labels) {
                 core.info(`Found label named '${label.name}' on pull request number ${context.payload.number}`);
-              };
+              }
 
               // Fail workflow if no labels exist
-              labelsExist = (labels.length === 0) ? false : true;
-              if (!labelsExist) core.setFailed(`Please ensure that a label exists on pull request number ${context.payload.number}`);
+              const labelsExist = labels.length > 0;
+              if (!labelsExist) {
+                core.setFailed(`Please ensure that a label exists on pull request number ${context.payload.number}`);
+              }
             }
 
-            getPullRequest();
+            await getPullRequest();
