@@ -4,17 +4,14 @@ on:
   workflow_call:
     inputs:
       label_name:
-        description: 'Label name'
         required: true
-        default: 'community'
+        type: string
       label_color:
-        description: 'Label color'
         required: true
-        default: '5319e7'
+        type: string
       org_membership:
-        description: 'Organization membership'
         required: true
-        default: puppetlabs
+        type: string
 
 jobs:
   communityLabeller:
