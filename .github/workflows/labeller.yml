@@ -12,6 +12,9 @@ on:
       org_membership:
         required: true
         type: string
+    secrets:
+      token:
+        required: true
 
 jobs:
   communityLabeller:
