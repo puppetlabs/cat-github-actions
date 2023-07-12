@@ -14,6 +14,16 @@ on:
         required: false
         default: ''
         type: "string"
+      docker_options:
+        description: "Any additional option needed for docker provisioner"
+        required: false
+        default: "docker_run_opts: {'--volume': '/lib/modules/$(uname -r):/lib/modules/$(uname -r)'}"
+        type: "string"
+      disable_apparmor:
+        description: "Disable apparmor service for MySQL"
+        required: false
+        default: false
+        type: "boolean"
 
 jobs:
 
@@ -75,10 +85,18 @@ jobs:
           bundle env
           echo ::endgroup::
 
+      - name: "Disable mysqld apparmor profile"
+        if: ${{ inputs.disable_apparmor }}
+        run: |
+          sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
+          sudo apparmor_parser -R /etc/apparmor.d/disable/usr.sbin.mysqld
+          sudo systemctl disable apparmor
+          sudo systemctl stop apparmor
+
       - name: "Provision environment"
         run: |
           if [[ "${{matrix.platforms.provider}}" == "docker" ]]; then
-            DOCKER_RUN_OPTS="docker_run_opts: {'--volume': '/lib/modules/$(uname -r):/lib/modules/$(uname -r)'}"
+            DOCKER_RUN_OPTS='${{inputs.docker_options}}'
           else
             DOCKER_RUN_OPTS=''
           fi
