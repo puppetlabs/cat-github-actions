@@ -40,8 +40,8 @@ jobs:
 
       - name: "export environment"
         run: |
-          echo "PUPPET_VERSION=${{ inputs.puppet_version }} >> $GITHUB_ENV"
-          echo "PUPPET_GEM_VERSION=${{ inputs.puppet_version }} >> $GITHUB_ENV"
+          echo "PUPPET_VERSION=${{ inputs.puppet_version }}" >> $GITHUB_ENV
+          echo "PUPPET_GEM_VERSION=${{ inputs.puppet_version }}" >> $GITHUB_ENV
 
       - name: "setup ruby"
         uses: "ruby/setup-ruby@v1"
