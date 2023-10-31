@@ -38,6 +38,22 @@ jobs:
           # Update version in metadata.json, only matching first occurrence
           sed -i "0,/$current_version/s//${{ github.event.inputs.version }}/" $(find . -name 'metadata.json')
 
+      - name: "setup ruby"
+        uses: "ruby/setup-ruby@v1"
+        with:
+          ruby-version: "3.2"
+          bundler-cache: "true"
+
+      - name: "bundle environment"
+        run: |
+          echo ::group::bundler environment
+          bundle env
+          echo ::endgroup::
+
+      - name: "Update REFERENCE.md"
+        run: |
+          bundle exec rake strings:generate:reference
+
       - name: "Get version"
         id: "get_version"
         run: |
