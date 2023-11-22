@@ -5,6 +5,9 @@ name: mend
 on:
   workflow_call:
 
+env:
+  BUNDLE_WITHOUT: release_prep
+
 jobs:
 
   mend:
