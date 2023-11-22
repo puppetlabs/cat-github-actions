@@ -43,6 +43,7 @@ jobs:
         with:
           ruby-version: "3.2"
           bundler-cache: "true"
+          bundler: 2.4.22
 
       - name: "bundle environment"
         run: |
