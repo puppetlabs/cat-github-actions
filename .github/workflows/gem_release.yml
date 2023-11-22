@@ -62,8 +62,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: "Publish gem"
+      - name: "Publish gem to rubygems"
         run: |
           gem push ./pkg/*.gem
         env:
           GEM_HOST_API_KEY: '${{ secrets.GEM_HOST_API_KEY }}'
+
+      - name: Build and publish to GitHub Package
+        uses: actionshub/publish-gem-to-github@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          owner: 'puppetlabs'
