@@ -63,6 +63,9 @@ jobs:
           bundle exec rake ${{ inputs.rake_task }}
 
       - name: Upload coverage reports to Codecov
+        # Only upload coverage reports once per CI trigger, as multiple concurrent uploads can cause issues
+        # so limit this step to only run once, with a conditional check for the latest Ruby version, on Ubuntu-latest
+        if: inputs.runs_on == 'ubuntu-latest' && inputs.ruby_version == '3.2'
         uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
