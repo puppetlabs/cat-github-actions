@@ -61,3 +61,11 @@ jobs:
       - name: "spec"
         run: |
           bundle exec rake ${{ inputs.rake_task }}
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/.resultset.json
+          fail_ci_if_error: true
+          verbose: true
