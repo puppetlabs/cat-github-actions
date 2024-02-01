@@ -9,29 +9,22 @@ jobs:
 
   mend:
     runs-on: "ubuntu-latest"
-
     steps:
-      # To access the mend secrets, we now need to trigger on pull_request_target event
-      # which by default runs in the context of the main branch, so we use this to retrieve
-      # the PR object and then checkout the merge commit sha
-      - name: "Retrieve PR"
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        id: pr
-        with:
-          script: |
-            const { data: pullRequest } = await github.rest.pulls.get({
-              ...context.repo,
-              pull_number: context.payload.pull_request.number,
-            });
-            return pullRequest
+      # If we are on a PR, checkout the PR head sha, else checkout the default branch
+      - name: "Set the checkout ref"
+        id: set_ref
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request_target" ]]; then
+            echo "ref=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
+          else
+            echo "ref=${{ github.ref }}" >> $GITHUB_OUTPUT
+          fi
 
       - name: "checkout"
         uses: "actions/checkout@v4"
         with:
           fetch-depth: 1
-          # If we are on a PR, checkout the merge commit sha, else checkout the main branch
-          ref: ${{ fromJSON(steps.pr.outputs.result).merge_commit_sha || 'refs/heads/main'}}
+          ref: ${{ steps.set_ref.outputs.ref }}
 
       - name: "setup ruby"
         uses: "ruby/setup-ruby@v1"
