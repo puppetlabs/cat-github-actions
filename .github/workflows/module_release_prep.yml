@@ -12,6 +12,9 @@ on:
         required: true
         type: "string"
 
+env:
+  BUNDLE_WITHOUT: development:system_tests
+
 jobs:
   release_prep:
     name: "Release prep"

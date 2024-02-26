@@ -15,6 +15,9 @@ on:
         default: ''
         type: "string"
 
+env:
+  BUNDLE_WITHOUT: release_prep
+
 jobs:
 
   setup_matrix:
