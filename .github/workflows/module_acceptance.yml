@@ -15,8 +15,6 @@ on:
         default: ''
         type: "string"
 
-env:
-  BUNDLE_WITHOUT: release_prep
 
 jobs:
 
@@ -25,6 +23,9 @@ jobs:
     runs-on: ${{ inputs.runs_on }}
     outputs:
       acceptance_matrix: ${{ steps.get-matrix.outputs.matrix }}
+
+    env:
+      BUNDLE_WITHOUT: release_prep
 
     steps:
 
@@ -58,6 +59,7 @@ jobs:
       matrix: ${{ fromJson( needs.setup_matrix.outputs.acceptance_matrix ) }}
 
     env:
+      BUNDLE_WITHOUT: release_prep
       PUPPET_GEM_VERSION: '~> 7.24'
       FACTER_GEM_VERSION: 'https://github.com/puppetlabs/facter#main'  # why is this set?
 

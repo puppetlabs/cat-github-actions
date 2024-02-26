@@ -5,14 +5,14 @@ name: mend
 on:
   workflow_call:
 
-env:
-  BUNDLE_WITHOUT: release_prep
-
 jobs:
 
   mend:
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: "ubuntu-latest"
+
+    env:
+      BUNDLE_WITHOUT: release_prep
 
     steps:
 
