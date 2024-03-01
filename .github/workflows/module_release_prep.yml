@@ -12,13 +12,14 @@ on:
         required: true
         type: "string"
 
-env:
-  BUNDLE_WITHOUT: development:system_tests
 
 jobs:
   release_prep:
     name: "Release prep"
     runs-on: "ubuntu-20.04"
+
+    env:
+      BUNDLE_WITHOUT: development:system_tests
 
     steps:
 
