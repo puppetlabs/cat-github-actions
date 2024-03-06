@@ -87,7 +87,7 @@ jobs:
           title: "Release prep v${{ steps.get_version.outputs.version }}"
           base: "main"
           body: |
-            Automated release-prep through [pdk-templates](https://github.com/puppetlabs/pdk-templates/blob/main/moduleroot/.github/workflows/auto_release.yml.erb) from commit ${{ github.sha }}.
+            Automated release-prep through [pdk-templates](https://github.com/puppetlabs/pdk-templates/blob/main/moduleroot/.github/workflows/release_prep.yml.erb) from commit ${{ github.sha }}.
             Please verify before merging:
             - [ ] last [nightly](https://github.com/${{ github.repository }}/actions/workflows/nightly.yml) run is green
             - [ ] [Changelog](https://github.com/${{ github.repository }}/blob/release-prep/CHANGELOG.md) is readable and has no unlabeled pull requests
