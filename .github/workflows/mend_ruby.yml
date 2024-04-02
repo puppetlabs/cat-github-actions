@@ -8,7 +8,7 @@ on:
 jobs:
 
   mend:
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    if: github.repository_owner == 'puppetlabs'
     runs-on: "ubuntu-latest"
 
     env:
