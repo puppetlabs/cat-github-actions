@@ -8,18 +8,23 @@ on:
 jobs:
 
   mend:
-    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: "ubuntu-latest"
-
-    env:
-      BUNDLE_WITHOUT: release_prep
-
     steps:
+      # If we are on a PR, checkout the PR head sha, else checkout the default branch
+      - name: "Set the checkout ref"
+        id: set_ref
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request_target" ]]; then
+            echo "ref=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
+          else
+            echo "ref=${{ github.ref }}" >> $GITHUB_OUTPUT
+          fi
 
       - name: "checkout"
         uses: "actions/checkout@v4"
         with:
           fetch-depth: 1
+          ref: ${{ steps.set_ref.outputs.ref }}
 
       - name: "setup ruby"
         uses: "ruby/setup-ruby@v1"
