@@ -4,14 +4,42 @@ name: mend
 
 on:
   workflow_call:
+    inputs:
+      api_key:
+        default: ''
+        type: string
+      token:
+        default: ''
+        type: string
+      product_name:
+        default: 'content-and-tooling'
+        type: string
+
+env:
+  MEND_API_KEY: ${{ secrets.MEND_API_KEY != '' && secrets.MEND_API_KEY || inputs.api_key }}
+  MEND_TOKEN: ${{ secrets.MEND_TOKEN != '' && secrets.MEND_TOKEN || inputs.token }}
+  PRODUCT_NAME: ${{ inputs.PRODUCT_NAME != '' && inputs.PRODUCT_NAME || inputs.product_name }}
+  REQUIRE_SECRETS: MEND_API_KEY MEND_TOKEN
 
 jobs:
-
   mend:
     runs-on: "ubuntu-latest"
+    continue-on-error: ${{ contains(fromJson('["puppetlabs","puppet-toy-chest"]'), github.repository_owner) != true }}
     steps:
+      - name: "check requirements"
+        run: |
+          declare -a MISSING
+          for V in ${REQUIRE_SECRETS} ; do
+            [[ -z "${!V}" ]] && MISSING+=($V)
+          done
+          if [ ${#MISSING[@]} -gt 0 ] ; then
+            echo "::warning::missing required secrets: ${MISSING[@]}"
+            exit 1
+          fi
+
       # If we are on a PR, checkout the PR head sha, else checkout the default branch
       - name: "Set the checkout ref"
+        if: success()
         id: set_ref
         run: |
           if [[ "${{ github.event_name }}" == "pull_request_target" ]]; then
@@ -21,32 +49,38 @@ jobs:
           fi
 
       - name: "checkout"
+        if: success()
         uses: "actions/checkout@v4"
         with:
           fetch-depth: 1
           ref: ${{ steps.set_ref.outputs.ref }}
 
       - name: "setup ruby"
+        if: success()
         uses: "ruby/setup-ruby@v1"
         with:
           ruby-version: 2.7
 
       - name: "bundle lock"
+        if: success()
         run: bundle lock
 
       - uses: "actions/setup-java@v4"
+        if: success()
         with:
           distribution: "temurin"
           java-version: "17"
 
       - name: "download"
+        if: success()
         run: curl -o wss-unified-agent.jar https://unified-agent.s3.amazonaws.com/wss-unified-agent.jar
 
       - name: "scan"
+        if: success()
         run: java -jar wss-unified-agent.jar
         env:
-          WS_APIKEY: ${{ secrets.MEND_API_KEY }}
+          WS_APIKEY: ${{ env.MEND_API_KEY }}
           WS_WSS_URL: https://saas-eu.whitesourcesoftware.com/agent
-          WS_USERKEY: ${{ secrets.MEND_TOKEN }}
-          WS_PRODUCTNAME: "content-and-tooling"
-          WS_PROJECTNAME: ${{  github.event.repository.name }}
+          WS_USERKEY: ${{ env.MEND_TOKEN }}
+          WS_PRODUCTNAME: ${{ env.PRODUCT_NAME }}
+          WS_PROJECTNAME: ${{ github.event.repository.name }}
