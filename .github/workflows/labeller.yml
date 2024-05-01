@@ -1,22 +1,21 @@
 name: Labeller
 
 on:
-  issues:
-    types:
-      - opened
-      - labeled
-      - unlabeled
-  pull_request_target:
-    types:
-      - opened
-      - labeled
-      - unlabeled
+  workflow_call:
+    inputs:
+      token:
+        type: string
 
 jobs:
   label:
+    name: ${{ github.event.action }} ${{ github.event_name }}
+    # case if the workflow is called improperly
+    if: |
+      contains(fromJson('["puppetlabs", "puppet-toy-chest"]'), github.repository_owner) &&
+      contains(fromJson('["pull_request_target", "issues"]'), github.event_name) &&
+      contains(fromJson('["opened", "reopened", "labeled", "unlabeled"]'), github.event.action)
     runs-on: ubuntu-latest
     steps:
-
       - uses: puppetlabs/community-labeller@v1.0.1
         name: Label issues or pull requests
         with:
@@ -24,4 +23,4 @@ jobs:
           label_color: '5319e7'
           org_membership: puppetlabs
           fail_if_member: 'true'
-          token: ${{ secrets.IAC_COMMUNITY_LABELER }}
+          token: ${{ inputs.token != '' && inputs.token || secrets.IAC_COMMUNITY_TOKEN }}
