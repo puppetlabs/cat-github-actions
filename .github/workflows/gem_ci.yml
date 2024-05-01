@@ -34,9 +34,22 @@ jobs:
       PUPPET_GEM_VERSION: ${{ inputs.puppet_gem_version }}
 
     steps:
+      # If we are on a PR, checkout the PR head sha, else checkout the default branch
+      # required when trigger set to pull_request_target
+      - name: "Set the checkout ref"
+        id: set_ref
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request_target" ]]; then
+            echo "ref=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
+          else
+            echo "ref=${{ github.ref }}" >> $GITHUB_OUTPUT
+          fi
 
       - name: "checkout"
         uses: "actions/checkout@v4"
+        with:
+          fetch-depth: 1
+          ref: ${{ steps.set_ref.outputs.ref }}
 
       - name: "export environment"
         run: |
