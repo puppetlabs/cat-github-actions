@@ -14,7 +14,14 @@ on:
         required: false
         default: ''
         type: "string"
-
+      kernel_modules:
+        description: "Volume map host kernel /lib/modules into docker container"
+        default: true
+        type: boolean
+      disable_apparmor:
+        description: "Disable and stop apparmor"
+        default: false
+        type: boolean
 
 jobs:
 
@@ -68,6 +75,16 @@ jobs:
       - name: "Checkout"
         uses: "actions/checkout@v4"
 
+      - name: "Disable Apparmor"
+        if: ${{ inputs.disable_apparmor }}
+        run: |
+          if command -v apparmor_parser >/dev/null ; then
+            sudo find /etc/apparmor.d/ -maxdepth 1 -type f -exec ln -sf {} /etc/apparmor.d/disable/ \;
+            sudo apparmor_parser -R /etc/apparmor.d/disable/* || true
+            sudo systemctl disable apparmor
+            sudo systemctl stop apparmor
+          fi
+
       - name: "Setup ruby"
         uses: "ruby/setup-ruby@v1"
         with:
@@ -82,7 +99,7 @@ jobs:
 
       - name: "Provision environment"
         run: |
-          if [[ "${{matrix.platforms.provider}}" == "docker" ]]; then
+          if [[ "${{ inputs.kernel_modules }}" == "true" ]] && [[ "${{matrix.platforms.provider}}" =~ docker* ]] ; then
             DOCKER_RUN_OPTS="docker_run_opts: {'--volume': '/lib/modules/$(uname -r):/lib/modules/$(uname -r)'}"
           else
             DOCKER_RUN_OPTS=''
