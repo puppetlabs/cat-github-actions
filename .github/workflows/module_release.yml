@@ -10,9 +10,14 @@ jobs:
   release:
     name: "Release"
     runs-on: "ubuntu-latest"
-    if: github.repository_owner == 'puppetlabs'
 
     steps:
+      - name: "Check Requirements"
+        run: |
+          if [[ -z "${{ secrets.FORGE_API_KEY }}" ]] ; then
+            echo "::error::missing required secret: FORGE_API_KEY"
+            exit 1
+          fi
 
       - name: "Checkout"
         uses: "actions/checkout@v4"
