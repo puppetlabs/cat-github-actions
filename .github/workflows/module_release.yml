@@ -85,7 +85,11 @@ jobs:
         run: |
           export GH_HOST=github.com
           gh extension install chelnak/gh-changelog
-          gh changelog get --latest | sed -e "1,/^\[Full Changelog\]/ d" > OUTPUT.md
+          # TODO replace sed when gh-changelog supports templates
+          gh changelog get --latest | \
+            sed -e "1,/^\[Full Changelog\]/ d" \
+                -e 's/(\[\([^]]*\)\]([^)]*))$/@\1/g' \
+                -e 's/\[#\([0-9]*\)\]([^)]*)/#\1/g' > OUTPUT.md
           echo "::group::release notes"
           cat OUTPUT.md
           echo "::endgroup::"
