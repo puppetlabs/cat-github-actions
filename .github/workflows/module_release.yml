@@ -78,7 +78,7 @@ jobs:
         run: |
           export GH_HOST=github.com
           gh extension install chelnak/gh-changelog
-          gh changelog get --latest > OUTPUT.md
+          gh changelog get --latest | sed -e "1,/^\[Full Changelog\]/ d" > OUTPUT.md
           echo "::group::release notes"
           cat OUTPUT.md
           echo "::endgroup::"
