@@ -5,52 +5,95 @@ name: "Module Release"
 
 on:
   workflow_call:
+    inputs:
+      tag:
+        description: "Enter an old tag, or blank to tag HEAD of branch"
+        default: ''
+        type: string
+      release:
+        description: "Create a release on Github"
+        type: boolean
+        default: true
+      publish:
+        description: "Publish to forge.puppet.com"
+        type: boolean
+        default: true
+
+env:
+  FORGE_API_KEY: ${{ secrets.FORGE_API_KEY }}
 
 jobs:
-  release:
-    name: "Release"
+  check:
     runs-on: "ubuntu-latest"
-
     steps:
       - name: "Check Requirements"
+        if: ${{ inputs.publish == true || inputs.publish == 'true' }}
         run: |
-          if [[ -z "${{ secrets.FORGE_API_KEY }}" ]] ; then
+          if [[ -z "${FORGE_API_KEY}" ]] ; then
             echo "::error::missing required secret: FORGE_API_KEY"
             exit 1
           fi
 
+  release:
+    name: ${{ inputs.tag != '' && inputs.tag || 'new' }}
+    needs: check
+    runs-on: "ubuntu-latest"
+
+    steps:
       - name: "Checkout"
         uses: "actions/checkout@v4"
         with:
           ref: "${{ github.ref }}"
           clean: true
           fetch-depth: 0
+          fetch-tags: true
 
-      - name: "Get version"
+      - name: "Checkout tag ${{ inputs.tag }}"
+        if: ${{ inputs.tag != '' }}
+        id: checkout
+        run: |
+          git checkout refs/tags/${{ inputs.tag }}
+          echo "tag=${{ inputs.tag }}" >> $GITHUB_OUTPUT
+
+      - name: "Get metadata version"
         id: "get_version"
         run: |
-          echo "version=$(jq --raw-output .version metadata.json)" >> $GITHUB_OUTPUT
+          metadata_version=$(jq --raw-output .version metadata.json)
+          if [[ -n "${{ inputs.tag }}" ]] ; then
+            tag=${{ steps.checkout.outputs.tag }}
+            if [[ "${metadata_version}" != "${tag/v}" ]] ; then
+              echo "::error::tag ${tag/v} does not match metadata version ${metadata_version}"
+              exit 1
+            fi
+          fi
+          echo "version=${metadata_version}" >> $GITHUB_OUTPUT
 
-      - name: "PDK build"
+      - name: "PDK build ${{ steps.get_version.outputs.version }}"
         uses: "docker://puppet/pdk:3.0.0.0"
         with:
           args: "build"
 
-      - name: "Generate release notes"
+      - name: "Generate release notes for Github"
+        if: ${{ inputs.release == true || inputs.release == 'true' }}
         run: |
           export GH_HOST=github.com
           gh extension install chelnak/gh-changelog
           gh changelog get --latest > OUTPUT.md
+          echo "::group::release notes"
+          cat OUTPUT.md
+          echo "::endgroup::"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: "Create release"
+      - name: "Create release for v${{ steps.get_version.outputs.version }}"
+        if: ${{ inputs.release == true || inputs.release == 'true' }}
         run: |
           gh release create v${{ steps.get_version.outputs.version }} --title v${{ steps.get_version.outputs.version }} -F OUTPUT.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: "Publish module"
+        if: ${{ inputs.publish == true || inputs.publish == 'true' }}
         uses: "docker://puppet/pdk:3.0.0.0"
         with:
-          args: 'release publish --forge-token ${{ secrets.FORGE_API_KEY }} --force'
+          args: 'release publish --forge-token ${{ env.FORGE_API_KEY }} --force'
