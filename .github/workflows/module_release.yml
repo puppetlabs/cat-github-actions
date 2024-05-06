@@ -88,6 +88,14 @@ jobs:
       - name: "Create release for v${{ steps.get_version.outputs.version }}"
         if: ${{ inputs.release == true || inputs.release == 'true' }}
         run: |
+          if [[ -z "${{ inputs.tag }}" ]] ; then
+            # create an annotated tag -- gh release create DOES NOT do this for us!
+            # TODO move this to an automatic action when a release_prep PR is merged
+            git config --local user.email "${{ github.repository_owner }}@users.noreply.github.com"
+            git config --local user.name "GitHub Actions"
+            git tag -a -m "v${{ steps.get_version.outputs.version }}" "v${{ steps.get_version.outputs.version }}"
+            git push origin tag "v${{ steps.get_version.outputs.version }}"
+          fi
           gh release create v${{ steps.get_version.outputs.version }} --title v${{ steps.get_version.outputs.version }} -F OUTPUT.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
