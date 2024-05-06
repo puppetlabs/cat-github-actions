@@ -123,10 +123,18 @@ jobs:
             echo "release_action=create" >> $GITHUB_OUTPUT
           fi
 
+          # is latest tag?
+          LAST_TAG=$(git for-each-ref refs/tags --sort='-*creatordate' --format='%(refname:short)' --count=1)
+          if [[ "${LAST_TAG}" == "${{ steps.metadata.outputs.tag }}" ]] ; then
+            echo "latest=true" >> $GITHUB_OUTPUT
+          else
+            echo "latest=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: "${{ steps.tag.outputs.release_action }} release for ${{ steps.metadata.outputs.tag }}"
         if: ${{ inputs.release == true || inputs.release == 'true' || steps.tag.outputs.undraft == 'true' }}
         run: |
-          gh release ${{ steps.tag.outputs.release_action }} ${{ steps.metadata.outputs.tag }} --draft=false --title ${{ steps.metadata.outputs.tag }} -F OUTPUT.md
+          gh release ${{ steps.tag.outputs.release_action }} ${{ steps.metadata.outputs.tag }} --latest=${{ steps.tag.outputs.latest }} --draft=false --title ${{ steps.metadata.outputs.tag }} -F OUTPUT.md
 
       - name: "Publish module"
         if: ${{ inputs.publish == true || inputs.publish == 'true' }}
