@@ -112,7 +112,7 @@ jobs:
           fi
 
           if [[ -z "${skip_tag}" ]] ; then
-            git tag -a $arg -F OUTPUT.md "${{ steps.metadata.outputs.tag }}"
+            GIT_COMMITTER_DATE="$(git log --format=%aD ...HEAD^)" git tag -a $arg -F OUTPUT.md "${{ steps.metadata.outputs.tag }}"
             git push $arg origin tag "${{ steps.metadata.outputs.tag }}"
           fi
 
