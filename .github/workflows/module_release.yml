@@ -18,9 +18,15 @@ on:
         description: "Publish to forge.puppet.com"
         type: boolean
         default: true
+      edit:
+        description: "Re-tag and regenerate release notes"
+        type: boolean
+        default: false
 
 env:
   FORGE_API_KEY: ${{ secrets.FORGE_API_KEY }}
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   check:
@@ -50,31 +56,32 @@ jobs:
 
       - name: "Checkout tag ${{ inputs.tag }}"
         if: ${{ inputs.tag != '' }}
-        id: checkout
         run: |
           git checkout refs/tags/${{ inputs.tag }}
-          echo "tag=${{ inputs.tag }}" >> $GITHUB_OUTPUT
 
-      - name: "Get metadata version"
-        id: "get_version"
+      - name: "Get metadata"
+        id: metadata
         run: |
           metadata_version=$(jq --raw-output .version metadata.json)
           if [[ -n "${{ inputs.tag }}" ]] ; then
-            tag=${{ steps.checkout.outputs.tag }}
+            tag=${{ inputs.tag }}
             if [[ "${metadata_version}" != "${tag/v}" ]] ; then
               echo "::error::tag ${tag/v} does not match metadata version ${metadata_version}"
               exit 1
             fi
+          else
+            tag="v${metadata_version}"
           fi
+          echo "tag=${tag}" >> $GITHUB_OUTPUT
           echo "version=${metadata_version}" >> $GITHUB_OUTPUT
 
-      - name: "PDK build ${{ steps.get_version.outputs.version }}"
+      - name: "PDK build ${{ steps.metadata.outputs.version }}"
         uses: "docker://puppet/pdk:3.0.0.0"
         with:
           args: "build"
 
       - name: "Generate release notes for Github"
-        if: ${{ inputs.release == true || inputs.release == 'true' }}
+        continue-on-error: true
         run: |
           export GH_HOST=github.com
           gh extension install chelnak/gh-changelog
@@ -82,23 +89,40 @@ jobs:
           echo "::group::release notes"
           cat OUTPUT.md
           echo "::endgroup::"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: "Create release for v${{ steps.get_version.outputs.version }}"
-        if: ${{ inputs.release == true || inputs.release == 'true' }}
+      - name: "Tag ${{ steps.metadata.outputs.tag }}"
+        id: tag
         run: |
-          if [[ -z "${{ inputs.tag }}" ]] ; then
-            # create an annotated tag -- gh release create DOES NOT do this for us!
-            # TODO move this to an automatic action when a release_prep PR is merged
-            git config --local user.email "${{ github.repository_owner }}@users.noreply.github.com"
-            git config --local user.name "GitHub Actions"
-            git tag -a -m "v${{ steps.get_version.outputs.version }}" "v${{ steps.get_version.outputs.version }}"
-            git push origin tag "v${{ steps.get_version.outputs.version }}"
+          # create an annotated tag -- gh release create DOES NOT do this for us!
+          # TODO move this to an automatic action when a release_prep PR is merged
+          git config --local user.email "${{ github.repository_owner }}@users.noreply.github.com"
+          git config --local user.name "GitHub Actions"
+
+          # overwrite existing tag?
+          if [[ -n "${{ inputs.tag }}" ]] ; then
+            if [[ "${{ inputs.edit }}" == "true" ]] ; then
+              arg="-f"
+            else
+              skip_tag=1
+            fi
           fi
-          gh release create v${{ steps.get_version.outputs.version }} --title v${{ steps.get_version.outputs.version }} -F OUTPUT.md
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+          if [[ -z "${skip_tag}" ]] ; then
+            git tag -a $arg -F OUTPUT.md "${{ steps.metadata.outputs.tag }}"
+            git push $arg origin tag "${{ steps.metadata.outputs.tag }}"
+          fi
+
+          if gh release view "${{ steps.metadata.outputs.tag }}" > /dev/null ; then
+            echo "release_action=edit" >> $GITHUB_OUTPUT
+            echo "undraft=${{ inputs.edit }}" >> $GITHUB_OUTPUT
+          else
+            echo "release_action=create" >> $GITHUB_OUTPUT
+          fi
+
+      - name: "${{ steps.tag.outputs.release_action }} release for ${{ steps.metadata.outputs.tag }}"
+        if: ${{ inputs.release == true || inputs.release == 'true' || steps.tag.outputs.undraft == 'true' }}
+        run: |
+          gh release ${{ steps.tag.outputs.release_action }} ${{ steps.metadata.outputs.tag }} --draft=false --title ${{ steps.metadata.outputs.tag }} -F OUTPUT.md
 
       - name: "Publish module"
         if: ${{ inputs.publish == true || inputs.publish == 'true' }}
