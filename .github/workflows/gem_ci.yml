@@ -73,7 +73,8 @@ jobs:
         if: |
           contains(inputs.rake_task, 'coverage') &&
           inputs.runs_on == 'ubuntu-latest' &&
-          inputs.ruby_version == '3.2'
+          inputs.ruby_version == '3.2' &&
+          secrets.CODECOV_TOKEN
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

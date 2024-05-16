@@ -5,47 +5,139 @@ name: "Module Release"
 
 on:
   workflow_call:
+    inputs:
+      tag:
+        description: "Enter an old tag, or blank to tag HEAD of branch"
+        default: ''
+        type: string
+      release:
+        description: "Create a release on Github"
+        type: boolean
+        default: true
+      publish:
+        description: "Publish to forge.puppet.com"
+        type: boolean
+        default: true
+      edit:
+        description: "Re-tag and regenerate release notes"
+        type: boolean
+        default: false
+
+env:
+  FORGE_API_KEY: ${{ secrets.FORGE_API_KEY }}
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
-  release:
-    name: "Release"
+  check:
     runs-on: "ubuntu-latest"
-    if: github.repository_owner == 'puppetlabs'
+    steps:
+      - name: "Check Requirements"
+        if: ${{ inputs.publish == true || inputs.publish == 'true' }}
+        run: |
+          if [[ -z "${FORGE_API_KEY}" ]] ; then
+            echo "::error::missing required secret: FORGE_API_KEY"
+            exit 1
+          fi
+
+  release:
+    name: ${{ inputs.tag != '' && inputs.tag || 'new' }}
+    needs: check
+    runs-on: "ubuntu-latest"
 
     steps:
-
       - name: "Checkout"
         uses: "actions/checkout@v4"
         with:
           ref: "${{ github.ref }}"
           clean: true
           fetch-depth: 0
+          fetch-tags: true
 
-      - name: "Get version"
-        id: "get_version"
+      - name: "Checkout tag ${{ inputs.tag }}"
+        if: ${{ inputs.tag != '' }}
         run: |
-          echo "version=$(jq --raw-output .version metadata.json)" >> $GITHUB_OUTPUT
+          git checkout refs/tags/${{ inputs.tag }}
 
-      - name: "PDK build"
+      - name: "Get metadata"
+        id: metadata
+        run: |
+          metadata_version=$(jq --raw-output .version metadata.json)
+          if [[ -n "${{ inputs.tag }}" ]] ; then
+            tag=${{ inputs.tag }}
+            if [[ "${metadata_version}" != "${tag/v}" ]] ; then
+              echo "::error::tag ${tag/v} does not match metadata version ${metadata_version}"
+              exit 1
+            fi
+          else
+            tag="v${metadata_version}"
+          fi
+          echo "tag=${tag}" >> $GITHUB_OUTPUT
+          echo "version=${metadata_version}" >> $GITHUB_OUTPUT
+
+      - name: "PDK build ${{ steps.metadata.outputs.version }}"
         uses: "docker://puppet/pdk:3.0.0.0"
         with:
           args: "build"
 
-      - name: "Generate release notes"
+      - name: "Generate release notes for Github"
+        continue-on-error: true
         run: |
           export GH_HOST=github.com
           gh extension install chelnak/gh-changelog
-          gh changelog get --latest > OUTPUT.md
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # TODO replace sed when gh-changelog supports templates
+          gh changelog get --latest | \
+            sed -e "1,/^\[Full Changelog\]/ d" \
+                -e 's/(\[\([^]]*\)\]([^)]*))$/@\1/g' \
+                -e 's/\[#\([0-9]*\)\]([^)]*)/#\1/g' > OUTPUT.md
+          echo "::group::release notes"
+          cat OUTPUT.md
+          echo "::endgroup::"
 
-      - name: "Create release"
+      - name: "Tag ${{ steps.metadata.outputs.tag }}"
+        id: tag
         run: |
-          gh release create v${{ steps.get_version.outputs.version }} --title v${{ steps.get_version.outputs.version }} -F OUTPUT.md
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # create an annotated tag -- gh release create DOES NOT do this for us!
+          # TODO move this to an automatic action when a release_prep PR is merged
+          git config --local user.email "${{ github.repository_owner }}@users.noreply.github.com"
+          git config --local user.name "GitHub Actions"
+
+          # overwrite existing tag?
+          if [[ -n "${{ inputs.tag }}" ]] ; then
+            if [[ "${{ inputs.edit }}" == "true" ]] ; then
+              arg="-f"
+            else
+              skip_tag=1
+            fi
+          fi
+
+          if [[ -z "${skip_tag}" ]] ; then
+            GIT_COMMITTER_DATE="$(git log --format=%aD ...HEAD^)" git tag -a $arg -F OUTPUT.md "${{ steps.metadata.outputs.tag }}"
+            git push $arg origin tag "${{ steps.metadata.outputs.tag }}"
+          fi
+
+          if gh release view "${{ steps.metadata.outputs.tag }}" > /dev/null ; then
+            echo "release_action=edit" >> $GITHUB_OUTPUT
+            echo "undraft=${{ inputs.edit }}" >> $GITHUB_OUTPUT
+          else
+            echo "release_action=create" >> $GITHUB_OUTPUT
+          fi
+
+          # is latest tag?
+          LAST_TAG=$(git for-each-ref refs/tags --sort='-*creatordate' --format='%(refname:short)' --count=1)
+          if [[ "${LAST_TAG}" == "${{ steps.metadata.outputs.tag }}" ]] ; then
+            echo "latest=true" >> $GITHUB_OUTPUT
+          else
+            echo "latest=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: "${{ steps.tag.outputs.release_action }} release for ${{ steps.metadata.outputs.tag }}"
+        if: ${{ inputs.release == true || inputs.release == 'true' || steps.tag.outputs.undraft == 'true' }}
+        run: |
+          gh release ${{ steps.tag.outputs.release_action }} ${{ steps.metadata.outputs.tag }} --latest=${{ steps.tag.outputs.latest }} --draft=false --title ${{ steps.metadata.outputs.tag }} -F OUTPUT.md
 
       - name: "Publish module"
+        if: ${{ inputs.publish == true || inputs.publish == 'true' }}
         uses: "docker://puppet/pdk:3.0.0.0"
         with:
-          args: 'release publish --forge-token ${{ secrets.FORGE_API_KEY }} --force'
+          args: 'release publish --forge-token ${{ env.FORGE_API_KEY }} --force'
