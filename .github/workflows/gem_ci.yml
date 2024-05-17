@@ -32,6 +32,7 @@ jobs:
 
     env:
       PUPPET_GEM_VERSION: ${{ inputs.puppet_gem_version }}
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
     steps:
       - name: "checkout"
@@ -74,7 +75,7 @@ jobs:
           contains(inputs.rake_task, 'coverage') &&
           inputs.runs_on == 'ubuntu-latest' &&
           inputs.ruby_version == '3.2' &&
-          secrets.CODECOV_TOKEN
+          env.CODECOV_TOKEN != ''
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
