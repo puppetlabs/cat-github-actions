@@ -15,27 +15,23 @@ on:
         default: 'DevX'
         type: string
 
-env:
-  MEND_API_KEY: ${{ secrets.MEND_API_KEY != '' && secrets.MEND_API_KEY || inputs.api_key }}
-  MEND_TOKEN: ${{ secrets.MEND_TOKEN != '' && secrets.MEND_TOKEN || inputs.token }}
-  PRODUCT_NAME: ${{ inputs.PRODUCT_NAME != '' && inputs.PRODUCT_NAME || inputs.product_name }}
-  REQUIRE_SECRETS: MEND_API_KEY MEND_TOKEN
-
 jobs:
   mend:
     runs-on: "ubuntu-latest"
     continue-on-error: ${{ contains(fromJson('["puppetlabs","puppet-toy-chest"]'), github.repository_owner) != true }}
+
     steps:
-      - name: "check requirements"
+      - id: init
         run: |
-          declare -a MISSING
-          for V in ${REQUIRE_SECRETS} ; do
-            [[ -z "${!V}" ]] && MISSING+=($V)
-          done
-          if [ ${#MISSING[@]} -gt 0 ] ; then
-            echo "::warning::missing required secrets: ${MISSING[@]}"
+          mend_api_key="${{ secrets.MEND_API_KEY != '' && secrets.MEND_API_KEY || inputs.api_key }}"
+          mend_token="${{ secrets.MEND_TOKEN != '' && secrets.MEND_TOKEN || inputs.token }}"
+          if [[ -z "${mend_api_key}" ]] || [[ -z "${mend_token}" ]] ; then
+            echo "::warning::missing required secrets"
             exit 1
           fi
+          echo "mend_api_key=${mend_api_key}" >> $GITHUB_OUTPUTS
+          echo "mend_token=${mend_api_key}" >> $GITHUB_OUTPUTS
+          echo "product_name=${{ vars.PRODUCT_NAME != '' && vars.PRODUCT_NAME || inputs.product_name }}" >> $GITHUB_OUTPUTS
 
       # If we are on a PR, checkout the PR head sha, else checkout the default branch
       - name: "Set the checkout ref"
@@ -79,8 +75,8 @@ jobs:
         if: success()
         run: java -jar wss-unified-agent.jar
         env:
-          WS_APIKEY: ${{ env.MEND_API_KEY }}
+          WS_APIKEY: ${{ steps.init.outputs.mend_api_key }}
           WS_WSS_URL: https://saas-eu.whitesourcesoftware.com/agent
-          WS_USERKEY: ${{ env.MEND_TOKEN }}
-          WS_PRODUCTNAME: ${{ env.PRODUCT_NAME }}
+          WS_USERKEY: ${{ steps.init.outputs.mend_token }}
+          WS_PRODUCTNAME: ${{ steps.init.outputs.product_name }}
           WS_PROJECTNAME: ${{ github.event.repository.name }}
