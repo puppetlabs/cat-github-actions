@@ -23,11 +23,6 @@ on:
         type: boolean
         default: false
 
-env:
-  FORGE_API_KEY: ${{ secrets.FORGE_API_KEY }}
-  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
 jobs:
   check:
     runs-on: "ubuntu-latest"
@@ -35,7 +30,7 @@ jobs:
       - name: "Check Requirements"
         if: ${{ inputs.publish == true || inputs.publish == 'true' }}
         run: |
-          if [[ -z "${FORGE_API_KEY}" ]] ; then
+          if [[ -z "${{ secrets.FORGE_API_KEY }}" ]] ; then
             echo "::error::missing required secret: FORGE_API_KEY"
             exit 1
           fi
@@ -82,6 +77,8 @@ jobs:
 
       - name: "Generate release notes for Github"
         continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           export GH_HOST=github.com
           gh extension install chelnak/gh-changelog
@@ -96,6 +93,9 @@ jobs:
 
       - name: "Tag ${{ steps.metadata.outputs.tag }}"
         id: tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # create an annotated tag -- gh release create DOES NOT do this for us!
           # TODO move this to an automatic action when a release_prep PR is merged
@@ -133,6 +133,8 @@ jobs:
 
       - name: "${{ steps.tag.outputs.release_action }} release for ${{ steps.metadata.outputs.tag }}"
         if: ${{ inputs.release == true || inputs.release == 'true' || steps.tag.outputs.undraft == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release ${{ steps.tag.outputs.release_action }} ${{ steps.metadata.outputs.tag }} --latest=${{ steps.tag.outputs.latest }} --draft=false --title ${{ steps.metadata.outputs.tag }} -F OUTPUT.md
 
@@ -140,4 +142,4 @@ jobs:
         if: ${{ inputs.publish == true || inputs.publish == 'true' }}
         uses: "docker://puppet/pdk:3.0.0.0"
         with:
-          args: 'release publish --forge-token ${{ env.FORGE_API_KEY }} --force'
+          args: 'release publish --forge-token ${{ secrets.FORGE_API_KEY }} --force'
