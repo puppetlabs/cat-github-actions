@@ -39,9 +39,6 @@ jobs:
         uses: "actions/checkout@v4"
         with:
           fetch-depth: 1
-          # If we are on a PR, checkout the PR head sha, else checkout the default branch
-          # required when trigger set to pull_request_target, ternary syntax is "${{ x && 'ifTrue' || 'ifFalse'  }}"
-          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.ref }}
 
       - name: "export environment"
         run: |
