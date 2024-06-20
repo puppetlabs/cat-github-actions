@@ -14,6 +14,11 @@ jobs:
 
     steps:
 
+      - name: "Set up Ruby"
+        uses: "actions/setup-ruby@v1"
+        with:
+          ruby-version: "3.1"
+
       - name: "Checkout"
         uses: "actions/checkout@v4"
         with:
@@ -24,7 +29,22 @@ jobs:
       - name: "Get version"
         id: "get_version"
         run: |
-          echo "version=$(jq --raw-output .version metadata.json)" >> $GITHUB_OUTPUT
+          ruby <<-EOF >> $GITHUB_OUTPUT
+            require "json"
+            version = JSON.parse(File.read("metadata.json"))["version"]
+
+            # from https://github.com/voxpupuli/metadata-json-lint/blob/b5e68049c6be58aa63263357bb0dcad8635a6829/lib/metadata-json-lint/schema.rb#L141-L150
+            numeric = '(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)' # Major . Minor . Patch
+            pre = '(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?' # Prerelease
+            build = '(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?' # Build
+            full = numeric + pre + build
+            semver_regex = /\A#{full}\Z/
+            if version&.match?(semver_regex)
+              puts "version=#{version}"
+            else
+              raise "Version #{version} is invalid. Exiting workflow."
+            end
+          EOF
 
       - name: "PDK build"
         uses: "docker://puppet/pdk:nightly"
