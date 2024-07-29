@@ -14,6 +14,11 @@ on:
       product_name:
         default: 'DevX'
         type: string
+      ruby_version:
+        description: "The target Ruby version."
+        required: false
+        default: "2.7"
+        type: "string"
 
 env:
   MEND_API_KEY: ${{ secrets.MEND_API_KEY != '' && secrets.MEND_API_KEY || inputs.api_key }}
@@ -47,7 +52,7 @@ jobs:
         if: success()
         uses: "ruby/setup-ruby@v1"
         with:
-          ruby-version: 2.7
+          ruby-version: ${{ inputs.ruby_version }}
 
       - name: "bundle lock"
         if: success()
