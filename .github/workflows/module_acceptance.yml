@@ -30,6 +30,8 @@ jobs:
     runs-on: ${{ inputs.runs_on }}
     outputs:
       acceptance_matrix: ${{ steps.get-matrix.outputs.matrix }}
+      ruby_version: ${{ steps.get-puppet_ruby_version.outputs.ruby_version }}
+      puppet_version: ${{ steps.get-puppet_ruby_version.outputs.puppet_version }}
 
     env:
       BUNDLE_WITHOUT: release_prep
@@ -56,8 +58,13 @@ jobs:
         run: |
           bundle exec matrix_from_metadata_v2 ${{ inputs.flags }}
 
+      - name: Setup Ruby Version and Setup Puppet Version
+        id: get-puppet_ruby_version
+        run: |
+          echo ${{ toJSON(steps.get-matrix.outputs.spec_matrix ) }} | jq -r '.include | .[0] | to_entries[] | "\(.key)=\(.value)"'  >> $GITHUB_OUTPUT
+
   acceptance:
-    name: "Acceptance tests (${{matrix.platforms.label}}, ${{matrix.collection}})"
+    name: "Acceptance tests (${{matrix.platforms.label}}, ${{matrix.collection}}) - ruby: ${{needs.setup_matrix.outputs.ruby_version}} puppet: ${{needs.setup_matrix.outputs.puppet_version}} "
     needs: "setup_matrix"
     runs-on: ${{ inputs.runs_on }}
     timeout-minutes: 180
@@ -67,7 +74,7 @@ jobs:
 
     env:
       BUNDLE_WITHOUT: release_prep
-      PUPPET_GEM_VERSION: '~> 7.24'
+      PUPPET_GEM_VERSION: ${{needs.setup_matrix.outputs.puppet_version}}
       FACTER_GEM_VERSION: 'https://github.com/puppetlabs/facter#main'  # why is this set?
 
     steps:
@@ -88,7 +95,7 @@ jobs:
       - name: "Setup ruby"
         uses: "ruby/setup-ruby@v1"
         with:
-          ruby-version: "2.7"
+          ruby-version: ${{needs.setup_matrix.outputs.ruby_version}}
           bundler-cache: true
 
       - name: "Bundle environment"
