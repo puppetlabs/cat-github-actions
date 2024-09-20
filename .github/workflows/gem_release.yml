@@ -11,6 +11,11 @@ on:
         required: false
         default: "main"
         type: "string"
+      ruby-version:
+        description: "Ruby version to use."
+        required: false
+        default: "2.7"
+        type: "string"
 
 jobs:
   release:
@@ -30,7 +35,7 @@ jobs:
       - name: "Setup ruby"
         uses: "ruby/setup-ruby@v1"
         with:
-          ruby-version: "2.7"
+          ruby-version: ${{ github.event.inputs.ruby-version }}
           bundler-cache: "true"
 
       - name: "Bundle environment"
