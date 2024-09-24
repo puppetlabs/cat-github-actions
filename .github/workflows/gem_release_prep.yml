@@ -16,11 +16,6 @@ on:
         description: "Version of gem to be released."
         required: true
         type: "string"
-      ruby-version:
-        description: "Ruby version to use."
-        required: false
-        default: "2.7"
-        type: "string"
 
 jobs:
   release_prep:
@@ -39,7 +34,7 @@ jobs:
       - name: "setup ruby"
         uses: "ruby/setup-ruby@v1"
         with:
-          ruby-version: ${{ github.event.inputs.ruby-version }}
+          ruby-version: "2.7"
           bundler-cache: "true"
 
       - name: "bundle environment"
