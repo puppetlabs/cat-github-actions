@@ -71,7 +71,7 @@ For example, the following will trigger a restart if either the `acceptance` or 
       # this to trigger the reusable workflow that restarts the failed job; and
       # (b) custom actions do not have access to the calling workflow's secrets
       - name: Trigger reusable workflow
-        uses: ./.github/actions/workflow-restarter-proxy
+        uses: ./.github/actions/workflow-restarter-proxy@main
         env:
           SOURCE_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
