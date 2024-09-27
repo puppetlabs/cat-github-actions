@@ -37,7 +37,7 @@ on:
 
 jobs:
   call-reusable-workflow:
-    uses: puppetlabs/cat-github-actions/.github/workflows/workflow-restarter.yml@main
+    uses: "puppetlabs/cat-github-actions/.github/workflows/workflow-restarter.yml@main"
     with:
       repo: ${{ inputs.repo }}
       run_id: ${{ inputs.run_id }}
@@ -55,7 +55,7 @@ Now add something like the following `yaml` job at the end of your workflow, cha
 For example, the following will trigger a restart if either the `acceptance` or the `unit` jobs preceeding it fail.  A restart of the failing jobs will be attempted 3 times at which point if the failing jobs continue to fail, then the workflow will be marked as failed.  If, however, at any point the `acceptance` and `unit` both pass fine then the restarted workflow will be marked as successful
 
 ```yaml
-  on-failure-workflow-restarter-proxy:
+ on-failure-workflow-restarter-proxy:
     # (1) run this job after the "acceptance" job and...
     needs: [acceptance, unit]
     # (2) continue ONLY IF "acceptance" fails
@@ -64,19 +64,16 @@ For example, the following will trigger a restart if either the `acceptance` or 
     steps:
       # (3) checkout this repository in order to "see" the following custom action
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      # (4) "use" the custom action to retrigger the failed "acceptance job" above
-      # NOTE: pass the SOURCE_GITHUB_TOKEN to the custom action because (a) it must have
-      # this to trigger the reusable workflow that restarts the failed job; and
-      # (b) custom actions do not have access to the calling workflow's secrets
       - name: Trigger reusable workflow
-        uses: ./.github/actions/workflow-restarter-proxy@main
+        uses: "puppetlabs/cat-github-actions/.github/actions/workflow-restarter-proxy"
         env:
           SOURCE_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           repository: ${{ github.repository }}
           run_id: ${{ github.run_id }}
+
 ```
 
 ## Appendix
