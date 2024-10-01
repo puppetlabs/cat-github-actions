@@ -30,13 +30,13 @@ jobs:
           # IF `--attempts` returns a non-zero exit code, then keep retrying
           status_code=$(gh run view ${{ inputs.run_id }} --repo ${{ inputs.repo }} --attempt ${{ inputs.retries }} --json status) || {
               echo "Retry count is within limit"
-              echo "::set-output name=should_retry::true"
+              echo "should_retry=true" >> $GITHUB_OUTPUT
               exit 0
           }
 
           # ELSE `--attempts` returns a zero exit code, so stop retrying
           echo "Retry count has reached the limit"
-          echo "::set-output name=should_retry::false"
+          echo "should_retry=false" >> $GITHUB_OUTPUT
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
