@@ -24,6 +24,11 @@ on:
         required: false
         default: "ubuntu-latest"
         type: "string"
+      run_shellcheck:
+        description: "Run shellcheck on all bash files"
+        required: false
+        default: false
+        type: "boolean"
 
 jobs:
   spec:
@@ -39,6 +44,14 @@ jobs:
         uses: "actions/checkout@v4"
         with:
           fetch-depth: 1
+      - name: "shellcheck"
+        uses: reviewdog/action-shellcheck@v1
+        if: |
+          inputs.run_shellcheck &&
+          inputs.ruby_version == '3.2' &&
+          inputs.runs_on == 'ubuntu-latest'
+        with:
+          check_all_files_with_shebangs: "true"
 
       - name: "export environment"
         run: |
