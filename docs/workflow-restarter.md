@@ -82,22 +82,22 @@ For example, the following will trigger a restart if either the `acceptance` or 
 
 The following shows 3 `Workflow Restarter` occuring after the `Workflow Restarter TEST`, which is set to fail continuously.
 
-![alt text](image.png)
+![alt text](./workflow-restarter/image.png)
 
 Looking closer at the `Workflow Restarter TEST` reveals
 
 * that the workflow includes 2 jobs `unit` and `acceptance`; and
 * that the workflow has been re-run 3 times, e.g.,
 
-![alt text](image-1.png)
+![alt text](./workflow-restarter/image-1.png)
 
 Further, the following sequence of screenshots shows that only failed jobs are re-run.
 
 * The `on-failure-workflow-restarter` job **(1)** is triggered by the failure of the `unit` job and **(2)** successfully calls the `workflow-restarter` workflow
 * The `workflow-restarter` in turn triggers a re-run of the `unit` job **(3)** and the `Workflow Restarter TEST` shows this as an incremented attempt count at **(4)**.
 
-![alt text](image-2.png)
+![alt text](./workflow-restarter/image-2.png)
 
-![alt text](image-3.png)
+![alt text](./workflow-restarter/image-3.png)
 
-![alt text](image-4.png)
+![alt text](./workflow-restarter/image-4.png)
