@@ -12,47 +12,13 @@ If setting up the the `workflow-restarter` for the first time, then make sure to
 
 ### Initialize the `Workflow Restarter`
 
-First, configure the `workflow-restarter-proxy` custom action by creating a `workflow-restarter.yml` file beneath the `.github/workflows` directory in your repository.
+In order to begin using the workflow-restarter, you need to first raise a PR and add the workflow restarter to your target repository.  In other words,
 
-Second, configure the `workflow-restarter` re-usable workflow:
+* Copy [workflow-restarter.yml](./workflow-restarter/workflow-restarter.yml) and [workflow-restarter-test.yml](./workflow-restarter/workflow-restarter-test.yml) to the `.github/workflows` directory of your target directory.
+* Raise and merge a PR adding the above to the main branch of your repository.
+* Verify that the `Workflow Restarter TEST` workflow works as expected.  See the [Appendix](#verify-workflow-restarter-with-workflow-restarter-test) for more information on what you should expect to see.
 
-```yaml
-name: Workflow Restarter
-on:
-  workflow_dispatch:
-    inputs:
-      repo:
-        description: "GitHub repository name."
-        required: true
-        type: string
-      run_id:
-        description: "The ID of the workflow run to rerun."
-        required: true
-        type: string
-      retries:
-        description: "The number of times to retry the workflow run."
-        required: false
-        type: string
-        default: "3"
-
-jobs:
-  call-reusable-workflow:
-    uses: "puppetlabs/cat-github-actions/.github/workflows/workflow-restarter.yml@main"
-    with:
-      repo: ${{ inputs.repo }}
-      run_id: ${{ inputs.run_id }}
-      retries: ${{ inputs.retries }}
-```
-
-Finally, verify that the `workflow-restarter.yml` performs as expected: 
-1. Add a `workflow-restarter-test.yml` file to `.github/workflows`, copy the contents of `./github/workflows/workflow-restarter-test` from this repository
-2. Kick off the `workflow-restarter-test` and it should fail and be re-started 3 times.  For example output see the [appendix below](#verify-workflow-restarter-with-workflow-restarter-test).
-
-### Configure an existing workflow to use `on-failure-workflow-restarter`
-
-Now add something like the following `yaml` job at the end of your workflow, changing only the `needs` section to suit.  
-
-For example, the following will trigger a restart if either the `acceptance` or the `unit` jobs preceeding it fail.  A restart of the failing jobs will be attempted 3 times at which point if the failing jobs continue to fail, then the workflow will be marked as failed.  If, however, at any point the `acceptance` and `unit` both pass fine then the restarted workflow will be marked as successful
+Once the above `Workflow Restarter TEST` is working then you should be able to add the workflow restarter to any of your existing github workflows.  The key is to re-use the `on-failure-workflow-restarter-proxy` located in the `Workflow Restarter TEST`.  For example, the following will trigger a restart if either the `acceptance` or the `unit` jobs preceeding it fail.  A restart of the failing jobs will be attempted 3 times at which point if the failing jobs continue to fail, then the workflow will be marked as failed.  If, however, at any point the `acceptance` and `unit` both pass fine then the restarted workflow will be marked as successful
 
 ```yaml
  on-failure-workflow-restarter-proxy:
