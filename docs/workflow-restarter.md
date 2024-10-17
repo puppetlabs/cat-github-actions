@@ -21,7 +21,7 @@ In order to begin using the workflow-restarter, you need to first raise a PR and
 Once the above `Workflow Restarter TEST` is working then you should be able to add the workflow restarter to any of your existing github workflows.  The key is to re-use the `on-failure-workflow-restarter-proxy` located in the `Workflow Restarter TEST`.  For example, the following will trigger a restart if either the `acceptance` or the `unit` jobs preceeding it fail.  A restart of the failing jobs will be attempted 3 times at which point if the failing jobs continue to fail, then the workflow will be marked as failed.  If, however, at any point the `acceptance` and `unit` both pass fine then the restarted workflow will be marked as successful
 
 ```yaml
- on-failure-workflow-restarter-proxy:
+  on-failure-workflow-restarter-proxy:
     # (1) run this job after the "acceptance" job and...
     needs: [acceptance, unit]
     # (2) continue ONLY IF "acceptance" fails
@@ -32,14 +32,14 @@ Once the above `Workflow Restarter TEST` is working then you should be able to a
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # (4) "use" the custom action to retrigger the failed "acceptance job" above
       - name: Trigger reusable workflow
-        uses: "puppetlabs/cat-github-actions/.github/actions/workflow-restarter-proxy"
+        uses: "puppetlabs/cat-github-actions/.github/actions/workflow-restarter-proxy@main"
         env:
           SOURCE_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           repository: ${{ github.repository }}
           run_id: ${{ github.run_id }}
-
 ```
 
 ## Appendix
