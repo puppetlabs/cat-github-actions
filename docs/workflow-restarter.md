@@ -8,17 +8,24 @@ Nevertheless, it is possible to programmatically restart a workflow after it fai
 
 ## Usage
 
-If setting up the the `workflow-restarter` for the first time, then make sure to initialize it first and then configure another workflow to programmatically restart on failure.
+If setting up the the `workflow-restarter` for the first time, then make sure to initialize it first and then configure another workflow to programmatically restart on failure.  In other words, you need to create 2 PRs
 
-### Initialize the `Workflow Restarter`
+* Create one PR that only adds the `.github/workflows/{workflow-restarter.yml,workflow-restarter-test.yml}` files.  See [Create the first PR...](#create-the-first-pr-to-initialize-the-workflow-restarter) section below.
+* Create a second PR to add the `on-failure-workflow-restarter-proxy` to existing workflows.  See [Create the second PR...](#create-the-second-pr-to-re-use-it-in-other-workflows) section below.
 
-In order to begin using the workflow-restarter, you need to first raise a PR and add the workflow restarter to your target repository.  In other words,
+### Create the first PR to initialize the `Workflow Restarter`
+
+In order to begin using the workflow-restarter, you need to first raise a PR and add the workflow restarter to your target repository.  In other words, for the `workflow-restarter` to work, it must be merged into the `main` branch before it can be referenced by other workflows (this seems to be a github action feature).
 
 * Copy [workflow-restarter.yml](./workflow-restarter/workflow-restarter.yml) and [workflow-restarter-test.yml](./workflow-restarter/workflow-restarter-test.yml) to the `.github/workflows` directory of your target directory.
 * Raise and merge a PR adding the above to the main branch of your repository.
 * Verify that the `Workflow Restarter TEST` workflow works as expected.  See the [Appendix](#verify-workflow-restarter-with-workflow-restarter-test) for more information on what you should expect to see.
 
-Once the above `Workflow Restarter TEST` is working then you should be able to add the workflow restarter to any of your existing github workflows.  The key is to re-use the `on-failure-workflow-restarter-proxy` located in the `Workflow Restarter TEST`.  For example, the following will trigger a restart if either the `acceptance` or the `unit` jobs preceeding it fail.  A restart of the failing jobs will be attempted 3 times at which point if the failing jobs continue to fail, then the workflow will be marked as failed.  If, however, at any point the `acceptance` and `unit` both pass fine then the restarted workflow will be marked as successful
+Once the above `Workflow Restarter TEST` is working then you should be able to add the workflow restarter to any of your existing github workflows, which is described in the next section.
+
+### Create the second PR to re-use it in other workflows
+
+The key here is to re-use the `on-failure-workflow-restarter-proxy` located in the `Workflow Restarter TEST`.  For example, the following will trigger a restart if either the `acceptance` or the `unit` jobs preceeding it fail.  A restart of the failing jobs will be attempted 3 times at which point if the failing jobs continue to fail, then the workflow will be marked as failed.  If, however, at any point the `acceptance` and `unit` both pass fine then the restarted workflow will be marked as successful
 
 ```yaml
   on-failure-workflow-restarter-proxy:
@@ -41,6 +48,8 @@ Once the above `Workflow Restarter TEST` is working then you should be able to a
           repository: ${{ github.repository }}
           run_id: ${{ github.run_id }}
 ```
+
+As well as adding updates to your existing workflows, you may also want to remove the `.github/workflows/workflow-restarter-test.yml` at this stage to keep your repository workflows tidy.
 
 ## Appendix
 
