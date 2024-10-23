@@ -18,3 +18,5 @@ The following are the workflows we currently maintain in this repository:
 * tooling_mend_ruby: automates the usage of mend for vulnerability scanning on tools
 * workflow-restarter-test: tests the workflow restarter functionality
 * workflow-restarter: restarts workflows that have failed or need to be re-run
+
+Note: For more information about workflows like workflow-restarter, check out our [docs](./docs/)
