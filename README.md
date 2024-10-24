@@ -20,3 +20,28 @@ The following are the workflows we currently maintain in this repository:
 * workflow-restarter: restarts workflows that have failed or need to be re-run
 
 Note: For more information about workflows like workflow-restarter, check out our [docs](./docs/)
+
+```mermaid
+flowchart TD
+    A[Content and Tooling] --> B & C
+    B(Modules) --> D & F
+    B@{ shape: div-rect }
+    C(Tools) --> G & I
+    C@{ shape: div-rect }
+    D@{ shape: procs, label: "Release"} --> N & O
+    F@{ shape: procs, label: "Testing"} --> J & K & L & M & Z
+    G@{ shape: procs, label: "Testing"} --> P & Q & R & M & Z
+    I@{ shape: procs, label: "Release"} --> S & T
+    J@{ shape: lin-rect, label: "mend_ruby.yml"}
+    K@{ shape: lin-rect, label: "module_acceptance.yml"}
+    L@{ shape: lin-rect, label: "module_ci.yml"}
+    M@{ shape: lin-rect, label: "lint.yml"}
+    N@{ shape: lin-rect, label: "module_release_prep.yml"}
+    O@{ shape: lin-rect, label: "module_release.yml"}
+    P@{ shape: lin-rect, label: "gem_ci.yml"}
+    Q@{ shape: lin-rect, label: "gem_acceptance.yml"}
+    R@{ shape: lin-rect, label: "tooling_mend_ruby.yml"}
+    S@{ shape: lin-rect, label: "gem_release_prep.yml"}
+    T@{ shape: lin-rect, label: "gem_release.yml"}
+    Z@{ shape: lin-rect, label: "workflow_restarter.yml"}
+```
