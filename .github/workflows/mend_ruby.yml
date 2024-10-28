@@ -30,7 +30,6 @@ jobs:
       - name: "check requirements"
         run: |
           declare -a MISSING
-          echo "REQUIRE2"
           for V in ${REQUIRE_SECRETS} ; do
             [[ -z "${!V}" ]] && MISSING+=($V)
           done
