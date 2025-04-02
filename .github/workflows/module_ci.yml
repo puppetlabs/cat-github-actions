@@ -22,7 +22,7 @@ on:
       ruby_version:
         description: "Ruby version to use"
         required: false
-        default: '2.7'
+        default: '3.1'
         type: "string"
       puppetcore_api_type:
         description: "The type of API to use for Puppet Core."
