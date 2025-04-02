@@ -24,18 +24,13 @@ on:
         required: false
         default: '3.1'
         type: "string"
-      puppetcore_api_type:
-        description: "The type of API to use for Puppet Core."
-        required: false
-        default: 'forge-key'
-        type: "string"
 
 # ENABLE PUPPETCORE.  The calling workflow must:
 # - Set a valid PUPPET_FORGE_TOKEN secret on its repository.
 # - Set ruby_version >= 3.1 to override this workflow's default 2.7; otherwise bundle install will fail.
 env:
   PUPPET_FORGE_TOKEN: ${{ secrets.PUPPET_FORGE_TOKEN }}
-  BUNDLE_RUBYGEMS___PUPPETCORE__PUPPET__COM: "${{ inputs.puppetcore_api_type }}:${{ secrets.PUPPET_FORGE_TOKEN }}"
+  BUNDLE_RUBYGEMS___PUPPETCORE__PUPPET__COM: "forge-key:${{ secrets.PUPPET_FORGE_TOKEN }}"
 
 jobs:
   setup_matrix:
