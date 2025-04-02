@@ -30,14 +30,19 @@ on:
         default: false
         type: "boolean"
 
+# ENABLE PUPPETCORE.  The calling workflow must:
+# - Set a valid PUPPET_FORGE_TOKEN secret on its repository.
+# - Set ruby_version >= 3.1 to override this workflow's default 2.7; otherwise bundle install will fail.
+env:
+  PUPPET_GEM_VERSION: ${{ inputs.puppet_gem_version }}
+  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+  PUPPET_FORGE_TOKEN: ${{ secrets.PUPPET_FORGE_TOKEN }}
+  BUNDLE_RUBYGEMS___PUPPETCORE__PUPPET__COM: "forge-key:${{ secrets.PUPPET_FORGE_TOKEN }}"
+
 jobs:
   spec:
     name: "spec"
     runs-on: ${{ inputs.runs_on }}
-
-    env:
-      PUPPET_GEM_VERSION: ${{ inputs.puppet_gem_version }}
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
     steps:
       - name: "checkout"
