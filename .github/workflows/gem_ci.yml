@@ -12,7 +12,7 @@ on:
       puppet_gem_version:
         description: "Specifies the version of the Puppet gem to be installed"
         required: false
-        default: "~> 7.0"
+        default: "~> 8.0"
         type: "string"
       rake_task:
         description: "The name of the rake task that executes tests"
@@ -53,7 +53,7 @@ jobs:
         uses: reviewdog/action-shellcheck@v1
         if: |
           inputs.run_shellcheck &&
-          inputs.ruby_version == '3.2' &&
+          inputs.ruby_version == ${{ inputs.ruby_version.default }} &&
           inputs.runs_on == 'ubuntu-latest'
         with:
           check_all_files_with_shebangs: "true"
@@ -89,7 +89,7 @@ jobs:
         if: |
           contains(inputs.rake_task, 'coverage') &&
           inputs.runs_on == 'ubuntu-latest' &&
-          inputs.ruby_version == '3.2' &&
+          inputs.ruby_version == '3.1' &&
           env.CODECOV_TOKEN != ''
         uses: codecov/codecov-action@v4
         with:

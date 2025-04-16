@@ -67,7 +67,7 @@ jobs:
 
     env:
       BUNDLE_WITHOUT: release_prep
-      PUPPET_GEM_VERSION: '~> 7.24'
+      PUPPET_GEM_VERSION: '~> 8.9'
       FACTER_GEM_VERSION: 'https://github.com/puppetlabs/facter#main'  # why is this set?
 
     steps:
