@@ -23,6 +23,12 @@ on:
         default: false
         type: boolean
 
+
+# ENABLE PUPPETCORE.  The calling workflow must:
+# - Set a valid PUPPET_FORGE_TOKEN secret on its repository.
+env:
+  PUPPET_FORGE_TOKEN: ${{ secrets.PUPPET_FORGE_TOKEN }}
+
 jobs:
 
   setup_matrix:
