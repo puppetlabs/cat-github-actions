@@ -41,6 +41,10 @@ jobs:
       BUNDLE_WITHOUT: release_prep
 
     steps:
+      - name: "Install Twingate"
+        uses: "twingate/github-action@v1"
+        with:
+          service-key: ${{ secrets.TWINGATE_KEY }}
 
       - name: "Checkout"
         uses: "actions/checkout@v4"
