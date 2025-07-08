@@ -25,11 +25,6 @@ env:
   MEND_TOKEN: ${{ secrets.MEND_TOKEN != '' && secrets.MEND_TOKEN || inputs.token }}
   PRODUCT_NAME: ${{ inputs.PRODUCT_NAME != '' && inputs.PRODUCT_NAME || inputs.product_name }}
   REQUIRE_SECRETS: MEND_API_KEY MEND_TOKEN
-  # ENABLE PUPPETCORE.  The calling workflow must:
-  # - Set a valid PUPPET_FORGE_TOKEN secret on its repository.
-  # - Set ruby_version >= 3.1 to override this workflow's default 2.7; otherwise bundle install will fail.
-  PUPPET_FORGE_TOKEN: ${{ secrets.PUPPET_FORGE_TOKEN }}
-  BUNDLE_RUBYGEMS___PUPPETCORE__PUPPET__COM: "forge-key:${{ secrets.PUPPET_FORGE_TOKEN }}"
 
 jobs:
   mend:
