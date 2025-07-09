@@ -28,6 +28,7 @@ on:
 # - Set a valid PUPPET_FORGE_TOKEN secret on its repository.
 env:
   PUPPET_FORGE_TOKEN: ${{ secrets.PUPPET_FORGE_TOKEN }}
+  BUNDLE_RUBYGEMS___PUPPETCORE__PUPPET__COM: "forge-key:${{ secrets.PUPPET_FORGE_TOKEN }}"
 
 jobs:
 
