@@ -141,7 +141,7 @@ jobs:
 
       - name: "Install Puppet agent"
         run: |
-          bundle exec rake 'litmus:install_agent[puppetcore8-nightly]'
+          bundle exec rake 'litmus:install_agent[puppetcore8]'
 
       - name: "Install module"
         run: |
