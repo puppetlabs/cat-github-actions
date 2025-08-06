@@ -7,7 +7,7 @@ on:
       runs_on:
         description: "The operating system used for the runner."
         required: false
-        default: "ubuntu-latest"
+        default: "ubuntu-22.04"
         type: "string"
       flags:
         description: "Additional flags to pass to matrix_from_metadata_v3."
