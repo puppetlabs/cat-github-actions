@@ -7,7 +7,6 @@ on:
       runs_on:
         description: "The operating system used for the runner."
         required: false
-        default: "ubuntu-latest"
         type: "string"
       flags:
         description: "Additional flags to pass to matrix_from_metadata_v3."
@@ -34,7 +33,7 @@ jobs:
 
   setup_matrix:
     name: "Setup Test Matrix"
-    runs-on: ${{ inputs.runs_on }}
+    runs-on: ubuntu-latest
     outputs:
       acceptance_matrix: ${{ steps.get-matrix.outputs.matrix }}
 
@@ -66,7 +65,7 @@ jobs:
   acceptance:
     name: "Acceptance tests (${{matrix.platforms.label}}, ${{matrix.collection}})"
     needs: "setup_matrix"
-    runs-on: ${{ inputs.runs_on }}
+    runs-on: ${{ inputs.runs_on || matrix.platforms.runner }}
     timeout-minutes: 180
     strategy:
       fail-fast: false
