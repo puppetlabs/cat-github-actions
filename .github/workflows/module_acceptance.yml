@@ -140,7 +140,12 @@ jobs:
 
       - name: "Install Puppet agent"
         run: |
-          bundle exec rake 'litmus:install_agent[${{ matrix.collection }}]'
+          if [[ "${{ matrix.collection.version }}" ]] ; then
+            export PUPPET_VERSION=${{ matrix.collection.version }}
+            bundle exec rake 'litmus:install_agent[${{ matrix.collection.collection }}]'
+          else
+            bundle exec rake 'litmus:install_agent[${{ matrix.collection }}]'
+          fi
 
       - name: "Install module"
         run: |
