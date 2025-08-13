@@ -138,6 +138,13 @@ jobs:
           FILE='spec/fixtures/litmus_inventory.yaml'
           sed -e 's/password: .*/password: "[redacted]"/' < $FILE || true
 
+      - name: "Check links"
+        run: |
+          nslookup artifactory.delivery.puppetlabs.net
+          ping -c 3 artifactory.delivery.puppetlabs.net
+          wget -S https://artifactory.delivery.puppetlabs.net:443/artifactory/internal_nightly__local/yum/puppet8-nightly-release-el-7.noarch.rpm
+          curl -v https://artifactory.delivery.puppetlabs.net:443/artifactory/internal_nightly__local/yum/puppet8-nightly-release-el-7.noarch.rpm
+
       - name: "Install Puppet agent"
         run: |
           if [[ "${{ matrix.collection.version }}" ]] ; then
