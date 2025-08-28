@@ -128,6 +128,7 @@ jobs:
 
       - name: "Provision environment"
         run: |
+          export SERVICE_URL=https://facade-set-subnetwork-1079112402178.europe-west1.run.app
           if [[ "${{ inputs.kernel_modules }}" == "true" ]] && [[ "${{matrix.platforms.provider}}" =~ docker* ]] ; then
             DOCKER_RUN_OPTS="docker_run_opts: {'--volume': '/lib/modules/$(uname -r):/lib/modules/$(uname -r)'}"
           else
