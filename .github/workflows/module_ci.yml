@@ -14,11 +14,6 @@ on:
         required: false
         default: ''
         type: "string"
-      service_url:
-        description: "The service URL to target when provisioning from GCP."
-        required: false
-        default: 'https://facade-release-6f3kfepqcq-ew.a.run.app/v1/provision'
-        type: "string"
       run_shellcheck:
         description: "Run shellcheck on all bash files"
         required: false
@@ -36,7 +31,6 @@ on:
 env:
   PUPPET_FORGE_TOKEN: ${{ secrets.PUPPET_FORGE_TOKEN || secrets.PUPPET_FORGE_TOKEN_PUBLIC }}
   BUNDLE_RUBYGEMS___PUPPETCORE__PUPPET__COM: "forge-key:${{ secrets.PUPPET_FORGE_TOKEN || secrets.PUPPET_FORGE_TOKEN_PUBLIC }}"
-  SERVICE_URL: ${{ inputs.service_url }}
 
 jobs:
   setup_matrix:
