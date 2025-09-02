@@ -13,6 +13,11 @@ on:
         required: false
         default: ''
         type: "string"
+      service_url:
+        description: "The service URL to target when provisioning from GCP."
+        required: false
+        default: 'https://facade-release-6f3kfepqcq-ew.a.run.app/v1/provision'
+        type: "string"
       kernel_modules:
         description: "Volume map host kernel /lib/modules into docker container"
         default: true
@@ -28,6 +33,7 @@ on:
 env:
   PUPPET_FORGE_TOKEN: ${{ secrets.PUPPET_FORGE_TOKEN || secrets.PUPPET_FORGE_TOKEN_PUBLIC }}
   BUNDLE_RUBYGEMS___PUPPETCORE__PUPPET__COM: "forge-key:${{ secrets.PUPPET_FORGE_TOKEN || secrets.PUPPET_FORGE_TOKEN_PUBLIC }}"
+  SERVICE_URL: ${{ inputs.service_url }}
 
 jobs:
 
