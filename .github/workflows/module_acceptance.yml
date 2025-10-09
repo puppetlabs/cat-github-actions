@@ -132,13 +132,6 @@ jobs:
           bundle env
           echo ::endgroup::
 
-      # Debugging via NGROK ssh tunnel. To be removed, do not merge.
-      - name: Start SSH session
-        uses: luchihoratiu/debug-via-ssh@main
-        with:
-          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-          SSH_PASS: ${{ secrets.SSH_PASS }}
-
       - name: "Provision environment"
         run: |
           if [[ "${{ inputs.kernel_modules }}" == "true" ]] && [[ "${{matrix.platforms.provider}}" =~ docker* ]] ; then
@@ -150,6 +143,15 @@ jobs:
           # Redact password
           FILE='spec/fixtures/litmus_inventory.yaml'
           sed -e 's/password: .*/password: "[redacted]"/' < $FILE || true
+
+
+
+      # Debugging via NGROK ssh tunnel. To be removed, do not merge.
+      - name: Start SSH session
+        uses: luchihoratiu/debug-via-ssh@main
+        with:
+          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+          SSH_PASS: ${{ secrets.SSH_PASS }}
 
       - name: "Install Puppet agent"
         run: |
