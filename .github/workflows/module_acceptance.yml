@@ -166,7 +166,7 @@ jobs:
           bundle exec rake 'litmus:acceptance:parallel'
 
       - name: "Remove test environment"
-        if: ${{ always() && (inputs.keep_test_env != 'true') }}
+        if: ${{ always() && (inputs.keep_test_env != true) }}
         continue-on-error: true
         run: |
           if [[ -f spec/fixtures/litmus_inventory.yaml ]]; then
