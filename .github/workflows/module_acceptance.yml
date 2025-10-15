@@ -26,6 +26,10 @@ on:
         description: "Disable and stop apparmor"
         default: false
         type: boolean
+      keep_test_env:
+        description: "Skip removing the test environment if true"
+        default: false
+        type: boolean
 
 
 # ENABLE PUPPETCORE.  The calling workflow must:
@@ -162,7 +166,7 @@ jobs:
           bundle exec rake 'litmus:acceptance:parallel'
 
       - name: "Remove test environment"
-        if: ${{ always() }}
+        if: ${{ always() && (inputs.keep_test_env != 'true') }}
         continue-on-error: true
         run: |
           if [[ -f spec/fixtures/litmus_inventory.yaml ]]; then
