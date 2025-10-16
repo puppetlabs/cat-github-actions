@@ -26,6 +26,10 @@ on:
         description: "Disable and stop apparmor"
         default: false
         type: boolean
+      ssh-debugging:
+        description: Boolean; whether or not to pause for ssh debugging
+        required: true
+        default: false
 
 
 # ENABLE PUPPETCORE.  The calling workflow must:
@@ -119,7 +123,12 @@ jobs:
             sudo systemctl disable apparmor
             sudo systemctl stop apparmor
           fi
-
+      - name: Start SSH session
+        if: ${{ github.event.inputs.ssh-debugging == 'true' }}
+        uses: luchihoratiu/debug-via-ssh@main
+        with:
+          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+          SSH_PASS: ${{ secrets.SSH_PASS }}
       - name: "Setup ruby"
         uses: "ruby/setup-ruby@v1"
         with:
@@ -157,9 +166,28 @@ jobs:
         run: |
           bundle exec rake 'litmus:install_module'
 
+      - name: Wait as long as the file ${HOME}/pause file is present
+        if: ${{ always() && github.event.inputs.ssh-debugging == true }}
+        run: |
+          while [ -f "${HOME}/pause" ] ; do
+            echo "${HOME}/pause present, sleeping for 60 seconds..."
+            sleep 60
+          done
+          echo "${HOME}/pause absent, continuing workflow."
+
+
       - name: "Run acceptance tests"
         run: |
           bundle exec rake 'litmus:acceptance:parallel'
+
+      - name: Wait as long as the file ${HOME}/pause file is present
+        if: ${{ always() && github.event.inputs.ssh-debugging == true }}
+        run: |
+          while [ -f "${HOME}/pause" ] ; do
+            echo "${HOME}/pause present, sleeping for 60 seconds..."
+            sleep 60
+          done
+          echo "${HOME}/pause absent, continuing workflow."
 
       - name: "Remove test environment"
         if: ${{ always() }}
