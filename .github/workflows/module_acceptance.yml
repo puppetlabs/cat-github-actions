@@ -140,9 +140,7 @@ jobs:
             DOCKER_RUN_OPTS=''
           fi
           bundle exec rake "litmus:provision[${{matrix.platforms.provider}},${{ matrix.platforms.image }},$DOCKER_RUN_OPTS]"
-          # Redact password
-          FILE='spec/fixtures/litmus_inventory.yaml'
-          sed -e 's/password: .*/password: "[redacted]"/' < $FILE || true
+          cat spec/fixtures/litmus_inventory.yaml
 
       - name: "Install Puppet agent"
         run: |
