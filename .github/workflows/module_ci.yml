@@ -24,6 +24,11 @@ on:
         required: false
         default: '3.1'
         type: "string"
+      additional_packages:
+        description: "Space-separated list of OS packages to install on the runner (apt-get)"
+        required: false
+        default: ''
+        type: "string"
 
 # ENABLE PUPPETCORE.  The calling workflow must:
 # - Set a valid PUPPET_FORGE_TOKEN secret on its repository.
@@ -48,6 +53,10 @@ jobs:
         uses: "actions/checkout@v4"
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: "Install additional packages"
+        if: ${{ inputs.additional_packages != '' }}
+        run: sudo apt-get install -y ${{ inputs.additional_packages }}
 
       - name: "Setup ruby"
         uses: "ruby/setup-ruby@v1"
@@ -84,6 +93,10 @@ jobs:
         uses: "actions/checkout@v4"
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: "Install additional packages"
+        if: ${{ inputs.additional_packages != '' }}
+        run: sudo apt-get install -y ${{ inputs.additional_packages }}
 
       - name: "Setup ruby"
         uses: "ruby/setup-ruby@v1"
