@@ -145,13 +145,18 @@ jobs:
           sed -e 's/password: .*/password: "[redacted]"/' < $FILE || true
 
       - name: "Install Puppet agent"
-        run: |
-          if [[ "${{ matrix.collection.version }}" ]] ; then
-            export PUPPET_VERSION=${{ matrix.collection.version }}
-            bundle exec rake 'litmus:install_agent[${{ matrix.collection.collection }}]'
-          else
-            bundle exec rake 'litmus:install_agent[${{ matrix.collection }}]'
-          fi
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 30
+          command: |
+            if [[ "${{ matrix.collection.version }}" ]] ; then
+              export PUPPET_VERSION=${{ matrix.collection.version }}
+              bundle exec rake 'litmus:install_agent[${{ matrix.collection.collection }}]'
+            else
+              bundle exec rake 'litmus:install_agent[${{ matrix.collection }}]'
+            fi
 
       - name: "Install module"
         run: |
