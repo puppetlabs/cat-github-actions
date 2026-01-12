@@ -69,7 +69,7 @@ jobs:
           bundle exec matrix_from_metadata_v3 ${{ inputs.flags }}
 
   acceptance:
-    name: "Acceptance tests (${{matrix.platforms.label}}, ${{matrix.collection.collection || matrix.collection}})"
+    name: "${{matrix.platforms.label}}, ${{matrix.collection.collection || matrix.collection}}"
     needs: "setup_matrix"
     runs-on: ${{ inputs.runs_on || matrix.platforms.runner }}
     timeout-minutes: 180
