@@ -89,24 +89,6 @@ jobs:
         with:
           service-key: ${{ env.TWINGATE_PUBLIC_REPO_KEY }}
 
-      - name: Fix DNS
-        run: |
-          echo "=== Remove Azure DNS from eth0 interface ==="
-          sudo resolvectl dns eth0 ""
-
-          echo "=== Configure Twingate DNS properly ==="
-          sudo resolvectl dns sdwan0 100.95.0.251 100.95.0.252
-          sudo resolvectl domain sdwan0 delivery.puppetlabs.net
-
-          echo "=== Flush DNS cache ==="
-          sudo resolvectl flush-caches
-
-          echo "=== Check new configuration ==="
-          resolvectl status
-
-          echo "=== Test DNS resolution ==="
-          nslookup artifactory.delivery.puppetlabs.net
-
       - name: "Checkout"
         uses: "actions/checkout@v4"
 
@@ -144,13 +126,29 @@ jobs:
           FILE='spec/fixtures/litmus_inventory.yaml'
           sed -e 's/password: .*/password: "[redacted]"/' < $FILE || true
 
-      - name: "Install Puppet agent"
+      - name: "Fix DNS and Install Puppet agent"
         uses: nick-fields/retry@v3
         with:
           timeout_minutes: 10
           max_attempts: 10
           retry_wait_seconds: 30
           command: |
+            echo "=== Remove Azure DNS from eth0 interface ==="
+            sudo resolvectl dns eth0 ""
+
+            echo "=== Configure Twingate DNS properly ==="
+            sudo resolvectl dns sdwan0 100.95.0.251 100.95.0.252
+            sudo resolvectl domain sdwan0 delivery.puppetlabs.net
+
+            echo "=== Flush DNS cache ==="
+            sudo resolvectl flush-caches
+
+            echo "=== Check new configuration ==="
+            resolvectl status
+
+            echo "=== Test DNS resolution ==="
+            nslookup artifactory.delivery.puppetlabs.net
+
             if [[ "${{ matrix.collection.version }}" ]] ; then
               export PUPPET_VERSION=${{ matrix.collection.version }}
               bundle exec rake 'litmus:install_agent[${{ matrix.collection.collection }}]'
