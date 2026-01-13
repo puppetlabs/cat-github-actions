@@ -80,7 +80,7 @@ jobs:
     env:
       BUNDLE_WITHOUT: release_prep
       PUPPET_GEM_VERSION: '~> 8.9'
-      FACTER_GEM_VERSION: 'https://github.com/puppetlabs/facter-private#main'
+      FACTER_GEM_VERSION: '~> 4.10'
       TWINGATE_PUBLIC_REPO_KEY: ${{ secrets.TWINGATE_PUBLIC_REPO_KEY }}
 
     steps:
