@@ -91,7 +91,7 @@ jobs:
           inputs.runs_on == 'ubuntu-latest' &&
           inputs.ruby_version == '3.1' &&
           env.CODECOV_TOKEN != ''
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/.resultset.json
