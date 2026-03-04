@@ -233,4 +233,3 @@ jobs:
       - name: "Install module"
         run: |
           bundle exec rake 'litmus:install_module'
-
