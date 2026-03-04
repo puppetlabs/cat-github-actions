@@ -107,7 +107,7 @@ jobs:
           echo "=== Test DNS resolution ==="
           nslookup artifactory.delivery.puppetlabs.net
 
-          Adjust resolv.conf to address Twingate-Docker issues
+          echo "=== Adjust resolv.conf to address Twingate-Docker issues ==="
           sed '/^nameserver 168.63.129.16$/d; /^search/d' /etc/resolv.conf > /tmp/resolv.conf && cat /tmp/resolv.conf > /etc/resolv.conf
 
       - name: "Checkout"
