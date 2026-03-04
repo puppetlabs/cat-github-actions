@@ -107,9 +107,6 @@ jobs:
           echo "=== Test DNS resolution ==="
           nslookup artifactory.delivery.puppetlabs.net
 
-          echo "=== Adjust resolv.conf to address Twingate-Docker issues ==="
-          sed '/^nameserver 168.63.129.16$/d; /^search/d' /etc/resolv.conf > /tmp/resolv.conf && cat /tmp/resolv.conf > /etc/resolv.conf
-
       - name: "Checkout"
         uses: "actions/checkout@v4"
 
@@ -158,6 +155,10 @@ jobs:
             # Redact password
             FILE='spec/fixtures/litmus_inventory.yaml'
             sed -e 's/password: .*/password: "[redacted]"/' < $FILE || true
+
+            # Fix DNS inside the provisioned container
+            echo "=== Adjusting resolv.conf inside provisioned container ==="
+            bundle exec bolt command run "sed -i '/^nameserver 168.63.129.16$/d; /^search/d' /etc/resolv.conf" --targets all --inventoryfile spec/fixtures/litmus_inventory.yaml
 
             # Install Puppet agent
             if [[ "${{ matrix.collection.version }}" ]] ; then
