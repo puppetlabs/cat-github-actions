@@ -142,4 +142,14 @@ jobs:
           bundle exec rake "litmus:provision[${{matrix.platforms.provider}},${{ matrix.platforms.image }},$DOCKER_RUN_OPTS]"
           cat spec/fixtures/litmus_inventory.yaml
 
-
+      - name: "Install Puppet agent"
+        run: |
+          if [[ "${{ matrix.collection.version }}" ]] ; then
+            export PUPPET_VERSION=${{ matrix.collection.version }}
+            bundle exec rake 'litmus:install_agent[${{ matrix.collection.collection }}]'
+          else
+            bundle exec rake 'litmus:install_agent[${{ matrix.collection }}]'
+          fi
+      - name: "Install module"
+        run: |
+          bundle exec rake 'litmus:install_module'
