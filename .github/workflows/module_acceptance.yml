@@ -132,41 +132,31 @@ jobs:
           bundle env
           echo ::endgroup::
 
-      - name: "Provision environment and install Puppet agent"
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 15
-          max_attempts: 5
-          retry_wait_seconds: 10
-          shell: bash
-          on_retry_command: |
-            echo "Cleaning up failed environment before retry..."
-            if test -f spec/fixtures/litmus_inventory.yaml; then
-              bundle exec rake 'litmus:tear_down' || true
-            fi
-          command: |
-            # Provision environment
-            if [[ "${{ inputs.kernel_modules }}" == "true" ]] && [[ "${{matrix.platforms.provider}}" =~ docker* ]] ; then
-              DOCKER_RUN_OPTS="docker_run_opts: {'--volume': '/lib/modules/$(uname -r):/lib/modules/$(uname -r)'}"
-            else
-              DOCKER_RUN_OPTS=''
-            fi
-            bundle exec rake "litmus:provision[${{matrix.platforms.provider}},${{ matrix.platforms.image }},$DOCKER_RUN_OPTS]"
-            # Redact password
-            FILE='spec/fixtures/litmus_inventory.yaml'
-            sed -e 's/password: .*/password: "[redacted]"/' < $FILE || true
+      - name: "Provision environment"
+        run: |
+          if [[ "${{ inputs.kernel_modules }}" == "true" ]] && [[ "${{matrix.platforms.provider}}" =~ docker* ]] ; then
+            DOCKER_RUN_OPTS="docker_run_opts: {'--volume': '/lib/modules/$(uname -r):/lib/modules/$(uname -r)'}"
+          else
+            DOCKER_RUN_OPTS=''
+          fi
+          bundle exec rake "litmus:provision[${{matrix.platforms.provider}},${{ matrix.platforms.image }},$DOCKER_RUN_OPTS]"
+          # Redact password
+          FILE='spec/fixtures/litmus_inventory.yaml'
+          sed -e 's/password: .*/password: "[redacted]"/' < $FILE || true
 
-            # Fix DNS inside the provisioned container
-            echo "=== Adjusting resolv.conf inside provisioned container ==="
-            bundle exec bolt command run "sed '/^nameserver 168.63.129.16\$/d; /^search/d' /etc/resolv.conf > /tmp/resolv.conf && cat /tmp/resolv.conf > /etc/resolv.conf" --targets all --inventoryfile spec/fixtures/litmus_inventory.yaml
+      - name: "Resolve Twingate-Docker DNS conflict"
+        run: |
+          echo "=== Adjusting resolv.conf inside provisioned container ==="
+          bundle exec bolt command run "sed '/^nameserver 168.63.129.16\$/d; /^search/d' /etc/resolv.conf > /tmp/resolv.conf && cat /tmp/resolv.conf > /etc/resolv.conf" --targets all --inventoryfile spec/fixtures/litmus_inventory.yaml
 
-            # Install Puppet agent
-            if [[ "${{ matrix.collection.version }}" ]] ; then
-              export PUPPET_VERSION=${{ matrix.collection.version }}
-              bundle exec rake 'litmus:install_agent[${{ matrix.collection.collection }}]'
-            else
-              bundle exec rake 'litmus:install_agent[${{ matrix.collection }}]'
-            fi
+      - name: "Install Puppet agent"
+        run: |
+          if [[ "${{ matrix.collection.version }}" ]] ; then
+            export PUPPET_VERSION=${{ matrix.collection.version }}
+            bundle exec rake 'litmus:install_agent[${{ matrix.collection.collection }}]'
+          else
+            bundle exec rake 'litmus:install_agent[${{ matrix.collection }}]'
+          fi
 
       - name: "Install module"
         run: |
