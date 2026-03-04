@@ -138,6 +138,7 @@ jobs:
           timeout_minutes: 15
           max_attempts: 5
           retry_wait_seconds: 10
+          shell: bash
           on_retry_command: |
             echo "Cleaning up failed environment before retry..."
             if [[ -f spec/fixtures/litmus_inventory.yaml ]]; then
