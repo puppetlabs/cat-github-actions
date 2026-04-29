@@ -30,13 +30,6 @@ on:
         default: ''
         type: "string"
 
-# ENABLE PUPPETCORE.  The calling workflow must:
-# - Set a valid PUPPET_FORGE_TOKEN secret on its repository.
-# - Set ruby_version >= 3.1 to override this workflow's default 2.7; otherwise bundle install will fail.
-env:
-  PUPPET_FORGE_TOKEN: ${{ secrets.PUPPET_FORGE_TOKEN || secrets.PUPPET_FORGE_TOKEN_PUBLIC }}
-  BUNDLE_RUBYGEMS___PUPPETCORE__PUPPET__COM: "forge-key:${{ secrets.PUPPET_FORGE_TOKEN || secrets.PUPPET_FORGE_TOKEN_PUBLIC }}"
-
 jobs:
   setup_matrix:
     name: "Setup Test Matrix"
@@ -57,6 +50,15 @@ jobs:
       - name: "Install additional packages"
         if: ${{ inputs.additional_packages != '' }}
         run: sudo apt-get install -y ${{ inputs.additional_packages }}
+
+      - name: "Configure forge authentication"
+        env:
+          FORGE_TOKEN: ${{ secrets.PUPPET_FORGE_TOKEN || secrets.PUPPET_FORGE_TOKEN_PUBLIC }}
+        run: |
+          if [ -n "$FORGE_TOKEN" ]; then
+            echo "PUPPET_FORGE_TOKEN=$FORGE_TOKEN" >> $GITHUB_ENV
+            echo "BUNDLE_RUBYGEMS___PUPPETCORE__PUPPET__COM=forge-key:$FORGE_TOKEN" >> $GITHUB_ENV
+          fi
 
       - name: "Setup ruby"
         uses: "ruby/setup-ruby@v1"
@@ -97,6 +99,15 @@ jobs:
       - name: "Install additional packages"
         if: ${{ inputs.additional_packages != '' }}
         run: sudo apt-get install -y ${{ inputs.additional_packages }}
+
+      - name: "Configure forge authentication"
+        env:
+          FORGE_TOKEN: ${{ secrets.PUPPET_FORGE_TOKEN || secrets.PUPPET_FORGE_TOKEN_PUBLIC }}
+        run: |
+          if [ -n "$FORGE_TOKEN" ]; then
+            echo "PUPPET_FORGE_TOKEN=$FORGE_TOKEN" >> $GITHUB_ENV
+            echo "BUNDLE_RUBYGEMS___PUPPETCORE__PUPPET__COM=forge-key:$FORGE_TOKEN" >> $GITHUB_ENV
+          fi
 
       - name: "Setup ruby"
         uses: "ruby/setup-ruby@v1"

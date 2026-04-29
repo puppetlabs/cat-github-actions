@@ -28,11 +28,7 @@ on:
         type: boolean
 
 
-# ENABLE PUPPETCORE.  The calling workflow must:
-# - Set a valid PUPPET_FORGE_TOKEN secret on its repository.
 env:
-  PUPPET_FORGE_TOKEN: ${{ secrets.PUPPET_FORGE_TOKEN || secrets.PUPPET_FORGE_TOKEN_PUBLIC }}
-  BUNDLE_RUBYGEMS___PUPPETCORE__PUPPET__COM: "forge-key:${{ secrets.PUPPET_FORGE_TOKEN || secrets.PUPPET_FORGE_TOKEN_PUBLIC }}"
   SERVICE_URL: ${{ inputs.service_url }}
 
 jobs:
@@ -40,6 +36,7 @@ jobs:
   setup_matrix:
     name: "Setup Test Matrix"
     runs-on: ubuntu-latest
+    if: ${{ github.event.pull_request.head.repo.fork != true }}
     outputs:
       acceptance_matrix: ${{ steps.get-matrix.outputs.matrix }}
 
@@ -50,6 +47,15 @@ jobs:
 
       - name: "Checkout"
         uses: "actions/checkout@v4"
+
+      - name: "Configure forge authentication"
+        env:
+          FORGE_TOKEN: ${{ secrets.PUPPET_FORGE_TOKEN || secrets.PUPPET_FORGE_TOKEN_PUBLIC }}
+        run: |
+          if [ -n "$FORGE_TOKEN" ]; then
+            echo "PUPPET_FORGE_TOKEN=$FORGE_TOKEN" >> $GITHUB_ENV
+            echo "BUNDLE_RUBYGEMS___PUPPETCORE__PUPPET__COM=forge-key:$FORGE_TOKEN" >> $GITHUB_ENV
+          fi
 
       - name: "Setup ruby"
         uses: "ruby/setup-ruby@v1"
@@ -84,12 +90,23 @@ jobs:
       TWINGATE_PUBLIC_REPO_KEY: ${{ secrets.TWINGATE_PUBLIC_REPO_KEY }}
 
     steps:
+      - name: "Configure forge authentication"
+        env:
+          FORGE_TOKEN: ${{ secrets.PUPPET_FORGE_TOKEN || secrets.PUPPET_FORGE_TOKEN_PUBLIC }}
+        run: |
+          if [ -n "$FORGE_TOKEN" ]; then
+            echo "PUPPET_FORGE_TOKEN=$FORGE_TOKEN" >> $GITHUB_ENV
+            echo "BUNDLE_RUBYGEMS___PUPPETCORE__PUPPET__COM=forge-key:$FORGE_TOKEN" >> $GITHUB_ENV
+          fi
+
       - name: "Install Twingate"
+        if: env.TWINGATE_PUBLIC_REPO_KEY != ''
         uses: "twingate/github-action@v1"
         with:
           service-key: ${{ env.TWINGATE_PUBLIC_REPO_KEY }}
 
       - name: Fix DNS
+        if: env.TWINGATE_PUBLIC_REPO_KEY != ''
         run: |
           echo "=== Remove Azure DNS from eth0 interface ==="
           sudo resolvectl dns eth0 ""
