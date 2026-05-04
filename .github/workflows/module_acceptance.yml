@@ -45,7 +45,7 @@ jobs:
     steps:
 
       - name: "Checkout"
-        uses: "actions/checkout@v4"
+        uses: "actions/checkout@v6"
 
       - name: "Configure forge authentication"
         env:
@@ -124,7 +124,7 @@ jobs:
           nslookup artifactory.delivery.puppetlabs.net
 
       - name: "Checkout"
-        uses: "actions/checkout@v4"
+        uses: "actions/checkout@v6"
 
       - name: "Disable Apparmor"
         if: ${{ inputs.disable_apparmor }}
