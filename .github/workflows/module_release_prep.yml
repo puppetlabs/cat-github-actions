@@ -44,9 +44,8 @@ jobs:
       - name: "setup ruby"
         uses: "ruby/setup-ruby@v1"
         with:
-          ruby-version: "3.1"
+          ruby-version: "3.3"
           bundler-cache: "true"
-          bundler: 2.4.22
 
       - name: "bundle environment"
         run: |
