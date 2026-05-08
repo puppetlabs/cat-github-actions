@@ -1,0 +1,5 @@
+{
+    "name": "github-integration",
+    "description": "Bootstraps Claude Code integration into a repository",
+    "version": "1.0.0"
+}
