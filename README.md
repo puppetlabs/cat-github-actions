@@ -13,13 +13,14 @@ The following are the workflows we currently maintain in this repository:
 * mend_ruby: automates the usage of mend for vulnerability scanning on modules
 * module_acceptance: runs automated acceptance CI for modules on PRs
 * module_ci: runs automated unit testing CI for modules on PRs
+* fork_ci_label_guard: strips the `allowed-for-ci` label from fork PRs on each new commit so privileged acceptance tests re-require CODEOWNER review
 * module_release_prep: prepares the module for release by running necessary pre-release checks and tasks
 * module_release: handles the release process of the module, including versioning and publishing
 * tooling_mend_ruby: automates the usage of mend for vulnerability scanning on tools
 * workflow-restarter-test: tests the workflow restarter functionality
 * workflow-restarter: restarts workflows that have failed or need to be re-run
 
-Note: For more information about workflows like workflow-restarter, check out our [docs](./docs/)
+Note: For more information about workflows like workflow-restarter, check out our [docs](./docs/). To enable acceptance testing against private puppetcore for fork PRs, see [docs/how-to/fork-pr-ci.md](./docs/how-to/fork-pr-ci.md).
 
 ```mermaid
 flowchart TD

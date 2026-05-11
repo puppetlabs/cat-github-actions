@@ -1,0 +1,15 @@
+name: "Fork CI Label Guard"
+
+# Strips the `allowed-for-ci` label on every new commit to a fork PR so that
+# each commit re-requires a fresh CODEOWNER review and re-label before the
+# privileged acceptance workflow can run.
+on:
+  pull_request_target:
+    types: [synchronize]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  strip:
+    uses: "puppetlabs/cat-github-actions/.github/workflows/fork_ci_label_guard.yml@main"

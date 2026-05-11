@@ -30,10 +30,21 @@ on:
         default: ''
         type: "string"
 
+permissions:
+  contents: read
+
 jobs:
   setup_matrix:
     name: "Setup Test Matrix"
     runs-on: ${{ inputs.runs_on }}
+    # Defense-in-depth: on `pull_request_target` (where this workflow runs
+    # with secrets in scope), fork PRs require the `allowed-for-ci` label.
+    # Non-`pull_request_target` invocations (plain `pull_request`,
+    # `workflow_dispatch`, etc.) are unaffected and continue to run.
+    if: >-
+      github.event_name != 'pull_request_target' ||
+      github.event.pull_request.head.repo.fork != true ||
+      contains(github.event.pull_request.labels.*.name, 'allowed-for-ci')
     outputs:
       spec_matrix: ${{ steps.get-matrix.outputs.spec_matrix }}
 
@@ -43,13 +54,17 @@ jobs:
     steps:
 
       - name: "Checkout"
-        uses: "actions/checkout@v4"
+        uses: "actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5"  # v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
+          persist-credentials: false
 
       - name: "Install additional packages"
         if: ${{ inputs.additional_packages != '' }}
-        run: sudo apt-get install -y ${{ inputs.additional_packages }}
+        env:
+          PACKAGES: ${{ inputs.additional_packages }}
+        run: sudo apt-get install -y -- $PACKAGES
 
       - name: "Configure forge authentication"
         env:
@@ -61,7 +76,7 @@ jobs:
           fi
 
       - name: "Setup ruby"
-        uses: "ruby/setup-ruby@v1"
+        uses: "ruby/setup-ruby@c4e5b1316158f92e3d49443a9d58b31d25ac0f8f"  # v1.306.0
         with:
           ruby-version: ${{ inputs.ruby_version }}
           bundler-cache: true
@@ -74,8 +89,10 @@ jobs:
 
       - name: Setup Spec Test Matrix
         id: get-matrix
+        env:
+          FLAGS: ${{ inputs.flags }}
         run: |
-          bundle exec matrix_from_metadata_v3 ${{ inputs.flags }}
+          bundle exec matrix_from_metadata_v3 $FLAGS
 
   spec:
     name: "Spec tests (Puppet: ${{matrix.puppet_version}}, Ruby Ver: ${{matrix.ruby_version}})"
@@ -92,13 +109,17 @@ jobs:
 
     steps:
       - name: "Checkout"
-        uses: "actions/checkout@v4"
+        uses: "actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5"  # v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
+          persist-credentials: false
 
       - name: "Install additional packages"
         if: ${{ inputs.additional_packages != '' }}
-        run: sudo apt-get install -y ${{ inputs.additional_packages }}
+        env:
+          PACKAGES: ${{ inputs.additional_packages }}
+        run: sudo apt-get install -y -- $PACKAGES
 
       - name: "Configure forge authentication"
         env:
@@ -110,7 +131,7 @@ jobs:
           fi
 
       - name: "Setup ruby"
-        uses: "ruby/setup-ruby@v1"
+        uses: "ruby/setup-ruby@c4e5b1316158f92e3d49443a9d58b31d25ac0f8f"  # v1.306.0
         with:
           ruby-version: ${{matrix.ruby_version}}
           bundler-cache: true
@@ -122,7 +143,7 @@ jobs:
           echo ::endgroup::
 
       - name: "shellcheck"
-        uses: reviewdog/action-shellcheck@v1
+        uses: reviewdog/action-shellcheck@4c07458293ac342d477251099501a718ae5ef86e  # v1
         if: |
           inputs.run_shellcheck &&
           inputs.runs_on == 'ubuntu-latest' &&
