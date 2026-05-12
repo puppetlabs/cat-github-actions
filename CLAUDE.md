@@ -24,7 +24,7 @@ Claude reviews the pull request and posts its feedback as a PR comment. Only one
 The GitHub Actions workflow is defined at:
 
 ```
-.github/workflows/claude-pr-review.yml
+.github/workflows/claude-pr.yml
 ```
 
 ## Required Secrets
