@@ -29,18 +29,22 @@ Complete **all** of these before flipping the caller workflow to the new pattern
 
 In the module repo: **Issues → Labels → New label**. Name it exactly `allowed-for-ci`. Description: "CODEOWNER review complete; run acceptance against private puppetcore for this commit."
 
-### 2. Restrict who can apply the label (ruleset)
+### 2. Audit who can apply the label (repository roles)
 
-**Settings → Rules → Rulesets → New ruleset → Repository**. Add a rule targeting the `allowed-for-ci` label that restricts add/remove permissions to teams `@puppetlabs/devx` and `@puppetlabs/modules`. This is the security primitive that makes label-presence a meaningful trust signal.
+GitHub rulesets do not currently target labels; label add/remove is gated by **repository role**. Anyone with **Triage** permission or higher can apply any label; external fork contributors have **Read** by default and cannot apply labels at all.
 
-If your repo's GitHub plan does not yet support label-scope rulesets, fall back to the environment approval gate (step 3) as the primary control and revisit once the feature is available.
+Audit `<MODULE>` → **Settings → Collaborators and teams**. Confirm nobody outside `@puppetlabs/modules` / `@puppetlabs/devx` (or other explicitly trusted internal teams) has Triage or higher. If a community triage team or external contractor has Triage+, decide whether they should be able to apply `allowed-for-ci`; if not, drop their role to Read or accept them as an additional trust principal and record that in the rollout ticket.
+
+For stricter per-label enforcement (only `@puppetlabs/modules` members, not all Triage+ users), see [Defense-in-depth follow-up](#defense-in-depth-follow-up) below.
 
 ### 3. Create the `puppetcore-fork` environment
 
 **Settings → Environments → New environment** named `puppetcore-fork`. Configure:
 
 - **Required reviewers**: `@puppetlabs/modules` (and/or `@puppetlabs/devx`).
-- **Environment secrets**: copy `PUPPET_FORGE_TOKEN` and `TWINGATE_PUBLIC_REPO_KEY` into the environment. During pilot, keep them at repo level too so same-repo PRs continue to work without the environment gate.
+- **Environment secrets**: only required if the secret currently lives at the **repo** level. For each secret used by acceptance (`PUPPET_FORGE_TOKEN`, `TWINGATE_PUBLIC_REPO_KEY`):
+    - If repo-level → copy the value into the environment with the same name. Keep the repo-level copy in place during pilot so same-repo PRs (which don't go through the environment) still work.
+    - If org-level → leave it alone. GitHub's secret resolution order is **environment → repo → org**, so an unset env secret falls through to the org level. The approval gate still fires before any step runs; the org secret is just sourced from its existing location. Verify the org secret's "Repository access" policy includes the pilot repo (org **Settings → Secrets → Actions → secret**); if the existing acceptance workflows authenticate successfully today, this is already configured.
 
 The acceptance job uses the environment only on fork PRs (see `module_acceptance.yml` for the conditional), so non-fork PRs do not pause for approval.
 
@@ -81,15 +85,21 @@ End-to-end test on the pilot module before declaring done:
 2. Apply `allowed-for-ci` as a CODEOWNER. Confirm `Acceptance` is queued and waits for environment approval.
 3. Approve the environment run. Confirm acceptance runs against private puppetcore.
 4. Push a new commit to the fork branch. Confirm: the label is removed automatically; `Spec` re-runs on the new commit; `Acceptance` does **not** auto-run.
-5. As a non-CODEOWNER test account, attempt to add `allowed-for-ci`. Confirm the ruleset blocks it.
+5. As a non-CODEOWNER test account (with **Read** role on the repo, or no role at all), attempt to add `allowed-for-ci`. Confirm GitHub blocks the action — the Labels control should not be available in the PR sidebar. (If you've added the labeller-verification follow-up workflow, also test with a **Triage** account outside `@puppetlabs/modules` and confirm the label is stripped automatically.)
 6. Open a fork PR that modifies `.github/workflows/ci.yml` (e.g., removes the gate). Confirm that on `pull_request_target` the **base** workflow definition runs, so the gate still holds.
 
 ## Troubleshooting
 
 - **Acceptance never runs on a labeled fork PR**: check that `pull_request_target` is in the trigger list and that `types:` includes `labeled`. Confirm the label name is exactly `allowed-for-ci`.
 - **Acceptance pauses indefinitely**: an environment reviewer has not approved. Check **Actions → workflow run → Review deployments**.
-- **Label cannot be applied**: the ruleset is rejecting it. Confirm the user is in `@puppetlabs/devx` or `@puppetlabs/modules`.
-- **Secrets missing inside acceptance**: confirm both repo-level (for same-repo PRs) and `puppetcore-fork` environment secrets are populated during pilot.
+- **Label cannot be applied**: the user's repo role is below **Triage**. Adjust their team membership or role in **Settings → Collaborators and teams**.
+- **Secrets missing inside acceptance**: trace the precedence chain. For same-repo PRs (no environment), the secret must exist at repo or org level. For fork PRs (`puppetcore-fork` environment), the secret must exist at env, repo, or org level. If org-only, confirm the org secret's "Repository access" policy includes the pilot repo.
+
+## Defense-in-depth follow-up
+
+The repo-role audit (step 2) gates labelling at the **Triage+** level, which may include trusted-but-not-CODEOWNER principals (e.g., a community triage team). If you need a hard "only `@puppetlabs/modules` members can apply this specific label" enforcement, the recommended next layer is a small `labeller_verification.yml` reusable workflow that fires on `pull_request_target: types: [labeled]`, checks the labeller's team membership via the GitHub API, and strips the label + fails the run if the labeller is not authorised. Because that workflow never checks out PR code, the token it uses is not reachable from PR-controlled scripts — different threat model than the acceptance workflow, so the earlier "no in-workflow team check" rule does not apply here.
+
+This is tracked as a follow-up to the initial pilot. The approval gate on the `puppetcore-fork` environment provides equivalent protection for pilot purposes.
 
 ## Security considerations
 
