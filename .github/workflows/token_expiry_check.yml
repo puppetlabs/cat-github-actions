@@ -2,12 +2,14 @@
 name: Check Forge Token Expiry
 on:
   schedule:
-    - cron: '0 9 * * *'  # daily at 9am UTC
+    - cron: "0 9 * * *" # daily at 9am UTC
   workflow_dispatch:
 
 jobs:
   check-expiry:
     runs-on: ubuntu-latest
+    env:
+      TOKEN_LIFETIME_DAYS: 365
     steps:
       - name: Check PUPPET_FORGE_TOKEN expiry
         id: check
@@ -21,12 +23,12 @@ jobs:
 
           if [ "$updated_at" = "null" ] || [ -z "$updated_at" ]; then
             echo "Failed to retrieve secret metadata" >&2
+            echo "failure_reason=retrieval_failed" >> $GITHUB_OUTPUT
             exit 1
           fi
 
-          token_lifetime_days=365
           updated_epoch=$(date -d "$updated_at" +%s)
-          expiry_epoch=$(( updated_epoch + token_lifetime_days * 86400 ))
+          expiry_epoch=$(( updated_epoch + TOKEN_LIFETIME_DAYS * 86400 ))
           days_remaining=$(( (expiry_epoch - $(date +%s)) / 86400 ))
 
           echo "days_remaining=$days_remaining" >> $GITHUB_OUTPUT
@@ -34,16 +36,24 @@ jobs:
           echo "Days remaining: $days_remaining"
 
           if [ "$days_remaining" -le 30 ]; then
+            echo "failure_reason=expiring_soon" >> $GITHUB_OUTPUT
             exit 1
           fi
 
-      - name: Notify Slack
-        if: failure() && steps.check.conclusion == 'failure'
+      - name: Notify Slack (expiring soon)
+        if: failure() && steps.check.outputs.failure_reason == 'expiring_soon'
         uses: slackapi/slack-github-action@v2
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
           webhook-type: incoming-webhook
           payload: |
-            {
-              "text": ":warning: *PUPPET_FORGE_TOKEN is expiring soon*\nThe token expires in *${{ steps.check.outputs.days_remaining }} days*. Please renew it before CI breaks.\n<https://github.com/puppetlabs/puppet-forge-api/actions/runs/${{ github.run_id }}|View workflow run>"
-            }
+            {"text": ":warning: *PUPPET_FORGE_TOKEN is expiring soon*\nExpires in *${{ steps.check.outputs.days_remaining }} days*. Please renew it before CI breaks.\n<https://github.com/puppetlabs/puppet-forge-api/actions/runs/${{ github.run_id }}|View run>"}
+
+      - name: Notify Slack (retrieval failed)
+        if: failure() && steps.check.outputs.failure_reason == 'retrieval_failed'
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {"text": ":x: *PUPPET_FORGE_TOKEN status unknown*\nFailed to retrieve secret metadata from GitHub API. Please check the workflow.\n<https://github.com/puppetlabs/puppet-forge-api/actions/runs/${{ github.run_id }}|View run>"}
