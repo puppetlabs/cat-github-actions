@@ -55,10 +55,9 @@ jobs:
     steps:
 
       - name: "Checkout"
-        uses: "actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5"  # v4
+        uses: "actions/checkout@v4"
         with:
-          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
-          ref: ${{ github.event.pull_request.head.sha || github.ref }}
+          ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
       - name: "Configure forge authentication"
@@ -71,7 +70,7 @@ jobs:
           fi
 
       - name: "Setup ruby"
-        uses: "ruby/setup-ruby@c4e5b1316158f92e3d49443a9d58b31d25ac0f8f"  # v1.306.0
+        uses: "ruby/setup-ruby@v1"
         with:
           ruby-version: "3.1"
           bundler-cache: true
@@ -84,10 +83,8 @@ jobs:
 
       - name: Setup Test Matrix
         id: get-matrix
-        env:
-          FLAGS: ${{ inputs.flags }}
         run: |
-          bundle exec matrix_from_metadata_v3 $FLAGS
+          bundle exec matrix_from_metadata_v3 ${{ inputs.flags }}
 
   acceptance:
     name: "Acceptance tests (${{matrix.platforms.label}}, ${{matrix.collection.collection || matrix.collection}})"
@@ -96,8 +93,8 @@ jobs:
     timeout-minutes: 180
     # Fork PRs go through the `puppetcore-fork` GitHub Environment, which has
     # required reviewers (the modules team) and holds env-scoped copies of
-    # PUPPET_FORGE_TOKEN / TWINGATE_PUBLIC_REPO_KEY. Same-repo PRs keep using
-    # repo-level secrets without per-run approval friction.
+    # PUPPET_FORGE_TOKEN / TWINGATE_PUBLIC_REPO_KEY where applicable.
+    # Same-repo PRs keep using repo/org-level secrets without per-run approval.
     environment: ${{ (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.fork == true) && 'puppetcore-fork' || '' }}
     strategy:
       fail-fast: false
@@ -121,7 +118,7 @@ jobs:
 
       - name: "Install Twingate"
         if: env.TWINGATE_PUBLIC_REPO_KEY != ''
-        uses: "twingate/github-action@f1e69fc5af67b737d8597b759e5c607f567e77f2"  # v1
+        uses: "twingate/github-action@v1"
         with:
           service-key: ${{ env.TWINGATE_PUBLIC_REPO_KEY }}
 
@@ -145,10 +142,9 @@ jobs:
           nslookup artifactory.delivery.puppetlabs.net
 
       - name: "Checkout"
-        uses: "actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5"  # v4
+        uses: "actions/checkout@v4"
         with:
-          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
-          ref: ${{ github.event.pull_request.head.sha || github.ref }}
+          ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
       - name: "Disable Apparmor"
@@ -162,7 +158,7 @@ jobs:
           fi
 
       - name: "Setup ruby"
-        uses: "ruby/setup-ruby@c4e5b1316158f92e3d49443a9d58b31d25ac0f8f"  # v1.306.0
+        uses: "ruby/setup-ruby@v1"
         with:
           ruby-version: "3.1"
           bundler-cache: true
@@ -175,11 +171,10 @@ jobs:
 
       - name: "Provision environment"
         env:
-          KERNEL_MODULES: ${{ inputs.kernel_modules }}
           PROVIDER: ${{ matrix.platforms.provider }}
           IMAGE: ${{ matrix.platforms.image }}
         run: |
-          if [[ "$KERNEL_MODULES" == "true" ]] && [[ "$PROVIDER" =~ docker* ]] ; then
+          if [[ "${{ inputs.kernel_modules }}" == "true" ]] && [[ "$PROVIDER" =~ docker* ]] ; then
             DOCKER_RUN_OPTS="docker_run_opts: {'--volume': '/lib/modules/$(uname -r):/lib/modules/$(uname -r)'}"
           else
             DOCKER_RUN_OPTS=''
@@ -194,13 +189,16 @@ jobs:
 
       - name: "Install Puppet agent"
         env:
-          COLLECTION: ${{ matrix.collection.collection || matrix.collection }}
-          PUPPET_VERSION_INPUT: ${{ matrix.collection.version || '' }}
+          COLLECTION_KEY: ${{ matrix.collection.collection }}
+          COLLECTION_STRING: ${{ matrix.collection }}
+          VERSION: ${{ matrix.collection.version }}
         run: |
-          if [ -n "$PUPPET_VERSION_INPUT" ]; then
-            export PUPPET_VERSION="$PUPPET_VERSION_INPUT"
+          if [[ "$VERSION" ]] ; then
+            export PUPPET_VERSION="$VERSION"
+            bundle exec rake "litmus:install_agent[$COLLECTION_KEY]"
+          else
+            bundle exec rake "litmus:install_agent[$COLLECTION_STRING]"
           fi
-          bundle exec rake "litmus:install_agent[$COLLECTION]"
 
       - name: "Install module"
         run: |
