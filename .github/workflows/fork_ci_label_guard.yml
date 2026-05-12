@@ -1,7 +1,8 @@
-# Strips the CI-enabling label from a fork PR whenever a new commit is pushed.
-# Paired with a `pull_request_target` trigger that gates acceptance tests on
-# the label's presence: removing the label here forces a fresh CODEOWNER
-# review and re-label before any subsequent commit can run with secrets.
+# Strips the CI-enabling label from a fork PR on events that may invalidate
+# the prior CODEOWNER review (new commits, close/reopen lifecycle). Paired
+# with a `pull_request_target` trigger in the caller that gates acceptance
+# on the label's presence: removing the label here forces a fresh CODEOWNER
+# review and re-label before any subsequent run with secrets.
 name: "Fork CI Label Guard"
 
 on:
@@ -18,7 +19,7 @@ permissions:
 
 jobs:
   strip-label:
-    name: "Strip CI label on synchronize"
+    name: "Strip CI label"
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request_target'
     steps:

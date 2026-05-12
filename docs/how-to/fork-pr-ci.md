@@ -76,6 +76,7 @@ The Spec track has already run by the time the reviewer sees the PR; review its 
 - A fork contributor opens a PR. `Spec` runs immediately (public track, no secrets). `Acceptance` does not run.
 - A CODEOWNER reviews the diff, focusing on the files above, and applies `allowed-for-ci`. The `labeled` event triggers `Acceptance` on `pull_request_target`. The acceptance job targets the `puppetcore-fork` environment and pauses for environment approval. A `@puppetlabs/modules` member approves; acceptance runs with `PUPPET_FORGE_TOKEN` in scope.
 - If the contributor pushes a new commit, `fork_ci_label_guard.yml` fires on `synchronize` and removes the label. The main caller workflow does **not** include `synchronize` in its `pull_request_target` trigger, so no acceptance run is created for the new commit. To run acceptance against the new code, a CODEOWNER must review again and re-apply the label.
+- If the PR is closed, `fork_ci_label_guard.yml` also fires on `closed` and removes the label. This prevents an attack where a contributor closes the PR, pushes new commits (no events fire on a closed PR), then reopens — without close-strip the label would persist across the reopen and the new commits would inherit the prior authorisation. Side effect: closing a merged PR also strips the label, which is cosmetic (the label is only meaningful for open PRs).
 
 ## Verification
 
