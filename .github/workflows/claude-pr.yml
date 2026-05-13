@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: puppetlabs/cat-github-actions/.github/workflows/claude-pr.yml@main
+      - uses: anthropics/claude-code-action@v1.0.96
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_CODE_REVIEW_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
