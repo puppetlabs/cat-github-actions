@@ -7,14 +7,18 @@ on:
 jobs:
   review:
     if: ${{ !github.event.pull_request.draft }}
-
+    runs-on: ubuntu-latest
     concurrency:
       group: claude-review-pr-${{ github.event.pull_request.number }}
       cancel-in-progress: true
     permissions:
       contents: read
       pull-requests: write
-    uses: puppetlabs/cat-github-actions/.github/workflows/claude-pr.yml@main
-    secrets:
-      anthropic_api_key: ${{ secrets.ANTHROPIC_CODE_REVIEW_KEY }}
-      github_token: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 0
+      - uses: puppetlabs/cat-github-actions/.github/workflows/claude-pr.yml@main
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_CODE_REVIEW_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
