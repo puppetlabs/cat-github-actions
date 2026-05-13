@@ -1,5 +1,6 @@
 name: Claude PR Review
 on:
+  workflow_call:
   pull_request:
     types: [opened, synchronize, ready_for_review, reopened]
 
