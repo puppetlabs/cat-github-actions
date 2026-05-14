@@ -1,7 +1,6 @@
 name: Claude PR Review
 on:
   workflow_call:
-    secrets: inherit
   pull_request:
     types: [opened, synchronize, ready_for_review, reopened]
 
