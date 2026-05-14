@@ -22,3 +22,6 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_CODE_REVIEW_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: |
+            Review this pull request. Describe the changes made. Check for bugs, security issues, logic errors,
+            and code quality problems. Post your findings as a PR review comment.
