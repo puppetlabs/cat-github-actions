@@ -1,4 +1,4 @@
-name: Claude PR Review
+name: "Claude PR Review"
 on:
   workflow_call:
   pull_request:
