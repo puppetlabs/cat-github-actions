@@ -1,0 +1,19 @@
+current directory: /Users/bronach.falls/git/cat-github-actions/vendor/bundle/ruby/4.0.0/gems/erb-6.0.4/ext/erb/escape
+/Users/bronach.falls/.rbenv/versions/4.0.1/bin/ruby extconf.rb
+checking for rb_ext_ractor_safe() in ruby.h... yes
+creating Makefile
+
+current directory: /Users/bronach.falls/git/cat-github-actions/vendor/bundle/ruby/4.0.0/gems/erb-6.0.4/ext/erb/escape
+make -j13 DESTDIR\= sitearchdir\=./.gem.20260515-85837-yssgah sitelibdir\=./.gem.20260515-85837-yssgah clean
+
+current directory: /Users/bronach.falls/git/cat-github-actions/vendor/bundle/ruby/4.0.0/gems/erb-6.0.4/ext/erb/escape
+make -j13 DESTDIR\= sitearchdir\=./.gem.20260515-85837-yssgah sitelibdir\=./.gem.20260515-85837-yssgah
+compiling escape.c
+linking shared-object erb/escape.bundle
+
+current directory: /Users/bronach.falls/git/cat-github-actions/vendor/bundle/ruby/4.0.0/gems/erb-6.0.4/ext/erb/escape
+make -j13 DESTDIR\= sitearchdir\=./.gem.20260515-85837-yssgah sitelibdir\=./.gem.20260515-85837-yssgah install
+/usr/bin/install -c -m 0755 escape.bundle ./.gem.20260515-85837-yssgah/erb
+
+current directory: /Users/bronach.falls/git/cat-github-actions/vendor/bundle/ruby/4.0.0/gems/erb-6.0.4/ext/erb/escape
+make DESTDIR\= sitearchdir\=./.gem.20260515-85837-yssgah sitelibdir\=./.gem.20260515-85837-yssgah clean
