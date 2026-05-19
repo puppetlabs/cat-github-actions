@@ -86,16 +86,40 @@ jobs:
         run: |
           bundle exec matrix_from_metadata_v3 ${{ inputs.flags }}
 
+  approval_gate:
+    name: "Fork PR approval gate"
+    needs: setup_matrix
+    runs-on: ubuntu-latest
+    # Funnels the `puppetcore-fork` environment approval through a single
+    # non-matrix job. Without this, every matrix entry of `acceptance` would
+    # declare `environment:` and create its own deployment event, producing
+    # 2N timeline notifications per labelled fork PR. Same-repo PRs and
+    # `workflow_dispatch` skip this job entirely; the `acceptance` job
+    # below handles the skipped case.
+    if: >-
+      github.event_name == 'pull_request_target' &&
+      github.event.pull_request.head.repo.fork == true
+    environment: puppetcore-fork
+    steps:
+      - name: "Approval received"
+        run: |
+          echo "Approved fork PR #${{ github.event.pull_request.number }}"
+          echo "Head SHA at approval: ${{ github.event.pull_request.head.sha }}"
+
   acceptance:
     name: "Acceptance tests (${{matrix.platforms.label}}, ${{matrix.collection.collection || matrix.collection}})"
-    needs: "setup_matrix"
+    needs: [setup_matrix, approval_gate]
+    # Runs after both setup_matrix and approval_gate. The `always()` is
+    # required so the if-expression is evaluated when approval_gate is
+    # skipped (non-fork events); without it, dependency-skip would
+    # cascade and skip acceptance too.
+    if: >-
+      always() &&
+      needs.setup_matrix.result == 'success' &&
+      (needs.approval_gate.result == 'success' ||
+       needs.approval_gate.result == 'skipped')
     runs-on: ${{ inputs.runs_on || matrix.platforms.runner }}
     timeout-minutes: 180
-    # Fork PRs go through the `puppetcore-fork` GitHub Environment, which has
-    # required reviewers (the modules team) and holds env-scoped copies of
-    # PUPPET_FORGE_TOKEN / TWINGATE_PUBLIC_REPO_KEY where applicable.
-    # Same-repo PRs keep using repo/org-level secrets without per-run approval.
-    environment: ${{ (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.fork == true) && 'puppetcore-fork' || '' }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson( needs.setup_matrix.outputs.acceptance_matrix ) }}

@@ -74,7 +74,7 @@ The Spec track has already run by the time the reviewer sees the PR; review its 
 ## How it works
 
 - A fork contributor opens a PR. `Spec` runs immediately (public track, no secrets). `Acceptance` does not run.
-- A CODEOWNER reviews the diff, focusing on the files above, and applies `allowed-for-ci`. The `labeled` event triggers `Acceptance` on `pull_request_target`. The acceptance job targets the `puppetcore-fork` environment and pauses for environment approval. A `@puppetlabs/modules` member approves; acceptance runs with `PUPPET_FORGE_TOKEN` in scope.
+- A CODEOWNER reviews the diff, focusing on the files above, and applies `allowed-for-ci`. The `labeled` event triggers the workflow on `pull_request_target`. A single `approval_gate` job (non-matrix) targets the `puppetcore-fork` environment and pauses for environment approval — the approval prompt shows the head SHA being deployed, which the reviewer should compare against the SHA they reviewed before approving. A `@puppetlabs/modules` member approves; `approval_gate` completes; the matrix `acceptance` jobs then run with `PUPPET_FORGE_TOKEN` in scope.
 - If the contributor pushes a new commit, `fork_ci_label_guard.yml` fires on `synchronize` and removes the label. The main caller workflow does **not** include `synchronize` in its `pull_request_target` trigger, so no acceptance run is created for the new commit. To run acceptance against the new code, a CODEOWNER must review again and re-apply the label.
 - If the PR is closed, `fork_ci_label_guard.yml` also fires on `closed` and removes the label. This prevents an attack where a contributor closes the PR, pushes new commits (no events fire on a closed PR), then reopens — without close-strip the label would persist across the reopen and the new commits would inherit the prior authorisation. Side effect: closing a merged PR also strips the label, which is cosmetic (the label is only meaningful for open PRs).
 
@@ -83,8 +83,8 @@ The Spec track has already run by the time the reviewer sees the PR; review its 
 End-to-end test on the pilot module before declaring done:
 
 1. Open a fork PR. Confirm `Spec` runs and `Acceptance` does not.
-2. Apply `allowed-for-ci` as a CODEOWNER. Confirm `Acceptance` is queued and waits for environment approval.
-3. Approve the environment run. Confirm acceptance runs against private puppetcore.
+2. Apply `allowed-for-ci` as a CODEOWNER. Confirm a single `approval_gate` job is queued and waits for environment approval (not one per matrix entry).
+3. Approve the environment run, after verifying the SHA shown in the approval prompt matches the SHA you reviewed. Confirm `approval_gate` completes, then the matrix `acceptance` jobs run against private puppetcore.
 4. Push a new commit to the fork branch. Confirm: the label is removed automatically; `Spec` re-runs on the new commit; `Acceptance` does **not** auto-run.
 5. As a non-CODEOWNER test account (with **Read** role on the repo, or no role at all), attempt to add `allowed-for-ci`. Confirm GitHub blocks the action — the Labels control should not be available in the PR sidebar. (If you've added the labeller-verification follow-up workflow, also test with a **Triage** account outside `@puppetlabs/modules` and confirm the label is stripped automatically.)
 6. Open a fork PR that modifies `.github/workflows/ci.yml` (e.g., removes the gate). Confirm that on `pull_request_target` the **base** workflow definition runs, so the gate still holds.
