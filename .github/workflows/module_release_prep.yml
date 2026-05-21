@@ -12,7 +12,6 @@ on:
         required: true
         type: "string"
 
-
 jobs:
   release_prep:
     name: "Release prep"
@@ -24,7 +23,7 @@ jobs:
     steps:
 
       - name: "Checkout"
-        uses: "actions/checkout@v4"
+        uses: "actions/checkout@v6"
         with:
           fetch-depth: 0
 
@@ -45,9 +44,8 @@ jobs:
       - name: "setup ruby"
         uses: "ruby/setup-ruby@v1"
         with:
-          ruby-version: "3.1"
+          ruby-version: "3.3"
           bundler-cache: "true"
-          bundler: 2.4.22
 
       - name: "bundle environment"
         run: |

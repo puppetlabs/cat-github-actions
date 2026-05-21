@@ -48,7 +48,7 @@ jobs:
     steps:
       # (3) checkout this repository in order to "see" the following custom action
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Trigger reusable workflow
         uses: "puppetlabs/cat-github-actions/.github/actions/workflow-restarter-proxy@main"

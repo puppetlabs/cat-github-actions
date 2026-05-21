@@ -26,7 +26,7 @@ runs:
 
     # checkout the repository because I want bundler to have access to my Gemfile
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     # setup ruby including a bundle install of my Gemfile
     - name: Set up Ruby and install Octokit
