@@ -30,10 +30,21 @@ on:
         default: ''
         type: "string"
 
+permissions:
+  contents: read
+
 jobs:
   setup_matrix:
     name: "Setup Test Matrix"
     runs-on: ${{ inputs.runs_on }}
+    # Defense-in-depth: on `pull_request_target` (where this workflow runs
+    # with secrets in scope), fork PRs require the `allowed-for-ci` label.
+    # Non-`pull_request_target` invocations (plain `pull_request`,
+    # `workflow_dispatch`, etc.) are unaffected and continue to run.
+    if: >-
+      github.event_name != 'pull_request_target' ||
+      github.event.pull_request.head.repo.fork != true ||
+      contains(github.event.pull_request.labels.*.name, 'allowed-for-ci')
     outputs:
       spec_matrix: ${{ steps.get-matrix.outputs.spec_matrix }}
 
@@ -46,6 +57,7 @@ jobs:
         uses: "actions/checkout@v4"
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
 
       - name: "Install additional packages"
         if: ${{ inputs.additional_packages != '' }}
@@ -95,6 +107,7 @@ jobs:
         uses: "actions/checkout@v4"
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
 
       - name: "Install additional packages"
         if: ${{ inputs.additional_packages != '' }}

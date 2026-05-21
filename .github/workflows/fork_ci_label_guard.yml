@@ -1,0 +1,33 @@
+# Strips the CI-enabling label from a fork PR on events that may invalidate
+# the prior CODEOWNER review (new commits, close/reopen lifecycle). Paired
+# with a `pull_request_target` trigger in the caller that gates acceptance
+# on the label's presence: removing the label here forces a fresh CODEOWNER
+# review and re-label before any subsequent run with secrets.
+name: "Fork CI Label Guard"
+
+on:
+  workflow_call:
+    inputs:
+      label:
+        description: "Label to strip from the PR on each new commit."
+        required: false
+        default: "allowed-for-ci"
+        type: "string"
+
+permissions:
+  pull-requests: write
+
+jobs:
+  strip-label:
+    name: "Strip CI label"
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request_target'
+    steps:
+      - name: "Remove label"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          LABEL: ${{ inputs.label }}
+        run: |
+          gh pr edit "$PR" --repo "$REPO" --remove-label "$LABEL" || true
