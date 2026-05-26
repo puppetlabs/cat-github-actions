@@ -1,0 +1,168 @@
+# This is a generic workflow for Puppet module acceptance operations custom versions.
+name: "Module Acceptance Custom"
+
+on:
+  workflow_call:
+    inputs:
+      runs_on:
+        description: "The operating system used for the runner."
+        required: false
+        default: "ubuntu-latest"
+        type: "string"
+      flags:
+        description: "Additional flags to pass to matrix_from_metadata_v2."
+        required: false
+        default: ''
+        type: "string"
+      kernel_modules:
+        description: "Volume map host kernel /lib/modules into docker container"
+        default: true
+        type: boolean
+      disable_apparmor:
+        description: "Disable and stop apparmor"
+        default: false
+        type: boolean
+      provision_environment__task:
+        description: 'Task for the step "Provision environment"'
+        default: 'litmus:provision'
+        type: "string"
+      install_agent__task:
+        description: 'Task for the step  "Install Puppet agent"'
+        default: 'litmus:install_agent'
+        type: "string"
+      install_module__task:
+        description: 'Task for the step "Install module"'
+        default: 'litmus:install_module'
+        type: "string"
+      acceptance__task:
+        description: 'Task for the step "Run acceptance tests"'
+        default: 'litmus:acceptance:parallel'
+        type: "string"
+      tear_down__task:
+        description: 'Task for the step "Remove test environment"'
+        default: 'litmus:tear_down'
+        type: "string"
+      matrix_from_metadata:
+        description: 'Commands to run to get the test matrix'
+        default: 'matrix_from_metadata_v2'
+        type: "string"
+
+
+jobs:
+
+  setup_matrix:
+    name: "Setup Test Matrix"
+    runs-on: ${{ inputs.runs_on }}
+    outputs:
+      acceptance_matrix: ${{ steps.get-matrix.outputs.matrix }}
+      ruby_version: ${{ steps.get-puppet_ruby_version.outputs.ruby_version }}
+      puppet_version: ${{ steps.get-puppet_ruby_version.outputs.puppet_version }}
+
+    env:
+      BUNDLE_WITHOUT: release_prep
+
+    steps:
+
+      - name: "Checkout"
+        uses: "actions/checkout@v4"
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: "Setup ruby"
+        uses: "ruby/setup-ruby@v1"
+        with:
+          ruby-version: "2.7"
+          bundler-cache: true
+
+      - name: "Bundle environment"
+        run: |
+          echo ::group::bundler environment
+          bundle env
+          echo ::endgroup::
+
+      - name: Setup Test Matrix
+        id: get-matrix
+        run: |
+          bundle exec ${{ inputs.matrix_from_metadata }} ${{ inputs.flags }}
+
+      - name: Setup Ruby Version and Setup Puppet Version
+        id: get-puppet_ruby_version
+        run: |
+          echo ${{ toJSON(steps.get-matrix.outputs.spec_matrix ) }} | jq -r '.include | .[0] | to_entries[] | "\(.key)=\(.value)"'  >> $GITHUB_OUTPUT
+
+  acceptance:
+    name: "Acceptance tests (${{matrix.platforms.label}} => ${{matrix.platforms.image}}, ${{matrix.collection}}) - ruby: ${{needs.setup_matrix.outputs.ruby_version}} puppet: ${{needs.setup_matrix.outputs.puppet_version}} "
+    needs: "setup_matrix"
+    runs-on: ${{ inputs.runs_on }}
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson( needs.setup_matrix.outputs.acceptance_matrix ) }}
+
+    env:
+      BUNDLE_WITHOUT: release_prep
+      PUPPET_GEM_VERSION: ${{needs.setup_matrix.outputs.puppet_version}}
+      FACTER_GEM_VERSION: 'https://github.com/puppetlabs/facter#main'  # why is this set?
+
+    steps:
+
+      - name: "Checkout"
+        uses: "actions/checkout@v4"
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: "Disable Apparmor"
+        if: ${{ inputs.disable_apparmor }}
+        run: |
+          if command -v apparmor_parser >/dev/null ; then
+            sudo find /etc/apparmor.d/ -maxdepth 1 -type f -exec ln -sf {} /etc/apparmor.d/disable/ \;
+            sudo apparmor_parser -R /etc/apparmor.d/disable/* || true
+            sudo systemctl disable apparmor
+            sudo systemctl stop apparmor
+          fi
+
+      - name: "Setup ruby"
+        uses: "ruby/setup-ruby@v1"
+        with:
+          ruby-version: ${{needs.setup_matrix.outputs.ruby_version}}
+          bundler-cache: true
+
+      - name: "Bundle environment"
+        run: |
+          echo ::group::bundler environment
+          bundle env
+          echo ::endgroup::
+
+      - name: "Provision environment"
+        run: |
+          if [[ "${{ inputs.kernel_modules }}" == "true" ]] && [[ "${{matrix.platforms.provider}}" =~ docker* ]] ; then
+            DOCKER_RUN_OPTS="docker_run_opts: {'--volume': '/lib/modules/$(uname -r):/lib/modules/$(uname -r)'}"
+          else
+            DOCKER_RUN_OPTS=''
+          fi
+          [ -z "${{ inputs.provision_environment__task }}" ] || bundle exec rake "${{ inputs.provision_environment__task }}[${{matrix.platforms.provider}},${{ matrix.platforms.image }},$DOCKER_RUN_OPTS]"
+          # Redact password
+          FILE='spec/fixtures/litmus_inventory.yaml'
+          if [[ -f $FILE ]] ; then
+          	sed -e 's/password: .*/password: "[redacted]"/' < $FILE || true ;
+          fi
+
+      - name: "Install Puppet agent"
+        run: |
+          [ -z "${{ inputs.install_agent__task }}" ] || bundle exec rake '${{ inputs.install_agent__task }}[${{ matrix.collection }}]'
+
+      - name: "Install module"
+        run: |
+          [ -z "${{ inputs.install_module__task }}" ] || bundle exec rake '${{ inputs.install_module__task }}'
+
+      - name: "Run acceptance tests"
+        run: |
+          [ -z "${{ inputs.acceptance__task }}" ] || bundle exec rake '${{ inputs.acceptance__task }}'
+
+      - name: "Remove test environment"
+        if: ${{ always() }}
+        continue-on-error: true
+        run: |
+          if [[ -f spec/fixtures/litmus_inventory.yaml ]] ; then
+            [ -z "${{ inputs.tear_down__task }}" ] || bundle exec rake '${{ inputs.tear_down__task }}'
+          fi
