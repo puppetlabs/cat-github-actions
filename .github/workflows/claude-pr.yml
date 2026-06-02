@@ -2,7 +2,7 @@ name: "Claude PR Review"
 on:
   workflow_call:
   pull_request:
-    types: [opened, synchronize, ready_for_review, reopened]
+    types: [synchronize]
 
 jobs:
   review:
@@ -15,7 +15,7 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - uses: anthropics/claude-code-action@v1.0.96
