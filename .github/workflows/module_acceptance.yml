@@ -214,7 +214,7 @@ jobs:
       - name: "Install Puppet agent"
         env:
           COLLECTION_KEY: ${{ matrix.collection.collection }}
-          COLLECTION_STRING: ${{ matrix.collection }}
+          COLLECTION_STRING: ${{ matrix.collection.collection || matrix.collection }}
           VERSION: ${{ matrix.collection.version }}
         run: |
           if [[ "$VERSION" ]] ; then
