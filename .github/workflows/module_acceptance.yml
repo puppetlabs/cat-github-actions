@@ -55,7 +55,7 @@ jobs:
     steps:
 
       - name: "Checkout"
-        uses: "actions/checkout@v4"
+        uses: "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10"  # v6.0.3
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
@@ -70,7 +70,7 @@ jobs:
           fi
 
       - name: "Setup ruby"
-        uses: "ruby/setup-ruby@v1"
+        uses: "ruby/setup-ruby@afeafc3d1ab54a631816aba4c914a0081c12ff2f"  # v1.310.0
         with:
           ruby-version: "3.1"
           bundler-cache: true
@@ -142,7 +142,7 @@ jobs:
 
       - name: "Install Twingate"
         if: env.TWINGATE_PUBLIC_REPO_KEY != ''
-        uses: "twingate/github-action@v1"
+        uses: "twingate/github-action@f1e69fc5af67b737d8597b759e5c607f567e77f2"  # v1
         with:
           service-key: ${{ env.TWINGATE_PUBLIC_REPO_KEY }}
 
@@ -166,7 +166,7 @@ jobs:
           nslookup artifactory.delivery.puppetlabs.net
 
       - name: "Checkout"
-        uses: "actions/checkout@v4"
+        uses: "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10"  # v6.0.3
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
@@ -182,7 +182,7 @@ jobs:
           fi
 
       - name: "Setup ruby"
-        uses: "ruby/setup-ruby@v1"
+        uses: "ruby/setup-ruby@afeafc3d1ab54a631816aba4c914a0081c12ff2f"  # v1.310.0
         with:
           ruby-version: "3.1"
           bundler-cache: true
