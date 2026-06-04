@@ -30,4 +30,9 @@ jobs:
           REPO: ${{ github.repository }}
           LABEL: ${{ inputs.label }}
         run: |
-          gh pr edit "$PR" --repo "$REPO" --remove-label "$LABEL" || true
+          labels=$(gh pr view "$PR" --repo "$REPO" --json labels --jq '.labels[].name')
+          if printf '%s\n' "$labels" | grep -qxF "$LABEL"; then
+            gh pr edit "$PR" --repo "$REPO" --remove-label "$LABEL"
+          else
+            echo "Label '$LABEL' not present on PR #$PR; nothing to remove."
+          fi
