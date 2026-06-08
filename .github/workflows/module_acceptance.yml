@@ -28,6 +28,9 @@ on:
         type: boolean
 
 
+permissions:
+  contents: read
+
 env:
   SERVICE_URL: ${{ inputs.service_url }}
 
@@ -36,6 +39,13 @@ jobs:
   setup_matrix:
     name: "Setup Test Matrix"
     runs-on: ubuntu-latest
+    # Defense-in-depth: on `pull_request_target` (where this workflow runs
+    # with secrets in scope), fork PRs require the `allowed-for-ci` label.
+    # Other invocations are unaffected.
+    if: >-
+      github.event_name != 'pull_request_target' ||
+      github.event.pull_request.head.repo.fork != true ||
+      contains(github.event.pull_request.labels.*.name, 'allowed-for-ci')
     outputs:
       acceptance_matrix: ${{ steps.get-matrix.outputs.matrix }}
 
@@ -45,7 +55,10 @@ jobs:
     steps:
 
       - name: "Checkout"
-        uses: "actions/checkout@v4"
+        uses: "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10"  # v6.0.3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
 
       - name: "Configure forge authentication"
         env:
@@ -57,7 +70,7 @@ jobs:
           fi
 
       - name: "Setup ruby"
-        uses: "ruby/setup-ruby@v1"
+        uses: "ruby/setup-ruby@afeafc3d1ab54a631816aba4c914a0081c12ff2f"  # v1.310.0
         with:
           ruby-version: "3.1"
           bundler-cache: true
@@ -73,9 +86,38 @@ jobs:
         run: |
           bundle exec matrix_from_metadata_v3 ${{ inputs.flags }}
 
+  approval_gate:
+    name: "Fork PR approval gate"
+    needs: setup_matrix
+    runs-on: ubuntu-latest
+    # Funnels the `puppetcore-fork` environment approval through a single
+    # non-matrix job. Without this, every matrix entry of `acceptance` would
+    # declare `environment:` and create its own deployment event, producing
+    # 2N timeline notifications per labelled fork PR. Same-repo PRs and
+    # `workflow_dispatch` skip this job entirely; the `acceptance` job
+    # below handles the skipped case.
+    if: >-
+      github.event_name == 'pull_request_target' &&
+      github.event.pull_request.head.repo.fork == true
+    environment: puppetcore-fork
+    steps:
+      - name: "Approval received"
+        run: |
+          echo "Approved fork PR #${{ github.event.pull_request.number }}"
+          echo "Head SHA at approval: ${{ github.event.pull_request.head.sha }}"
+
   acceptance:
     name: "Acceptance tests (${{matrix.platforms.label}}, ${{matrix.collection.collection || matrix.collection}})"
-    needs: "setup_matrix"
+    needs: [setup_matrix, approval_gate]
+    # Runs after both setup_matrix and approval_gate. The `always()` is
+    # required so the if-expression is evaluated when approval_gate is
+    # skipped (non-fork events); without it, dependency-skip would
+    # cascade and skip acceptance too.
+    if: >-
+      always() &&
+      needs.setup_matrix.result == 'success' &&
+      (needs.approval_gate.result == 'success' ||
+       needs.approval_gate.result == 'skipped')
     runs-on: ${{ inputs.runs_on || matrix.platforms.runner }}
     timeout-minutes: 180
     strategy:
@@ -100,7 +142,7 @@ jobs:
 
       - name: "Install Twingate"
         if: env.TWINGATE_PUBLIC_REPO_KEY != ''
-        uses: "twingate/github-action@v1"
+        uses: "twingate/github-action@f1e69fc5af67b737d8597b759e5c607f567e77f2"  # v1
         with:
           service-key: ${{ env.TWINGATE_PUBLIC_REPO_KEY }}
 
@@ -124,7 +166,10 @@ jobs:
           nslookup artifactory.delivery.puppetlabs.net
 
       - name: "Checkout"
-        uses: "actions/checkout@v4"
+        uses: "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10"  # v6.0.3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
 
       - name: "Disable Apparmor"
         if: ${{ inputs.disable_apparmor }}
@@ -137,7 +182,7 @@ jobs:
           fi
 
       - name: "Setup ruby"
-        uses: "ruby/setup-ruby@v1"
+        uses: "ruby/setup-ruby@afeafc3d1ab54a631816aba4c914a0081c12ff2f"  # v1.310.0
         with:
           ruby-version: "3.1"
           bundler-cache: true
@@ -149,13 +194,16 @@ jobs:
           echo ::endgroup::
 
       - name: "Provision environment"
+        env:
+          PROVIDER: ${{ matrix.platforms.provider }}
+          IMAGE: ${{ matrix.platforms.image }}
         run: |
-          if [[ "${{ inputs.kernel_modules }}" == "true" ]] && [[ "${{matrix.platforms.provider}}" =~ docker* ]] ; then
+          if [[ "${{ inputs.kernel_modules }}" == "true" ]] && [[ "$PROVIDER" =~ docker* ]] ; then
             DOCKER_RUN_OPTS="docker_run_opts: {'--volume': '/lib/modules/$(uname -r):/lib/modules/$(uname -r)'}"
           else
             DOCKER_RUN_OPTS=''
           fi
-          bundle exec rake "litmus:provision[${{matrix.platforms.provider}},${{ matrix.platforms.image }},$DOCKER_RUN_OPTS]"
+          bundle exec rake "litmus:provision[$PROVIDER,$IMAGE,$DOCKER_RUN_OPTS]"
           FILE='spec/fixtures/litmus_inventory.yaml'
           sed -e 's/password: .*/password: "[redacted]"/' < $FILE || true
           if [[ -n "$TWINGATE_PUBLIC_REPO_KEY" ]]; then
@@ -164,12 +212,16 @@ jobs:
 
 
       - name: "Install Puppet agent"
+        env:
+          COLLECTION_KEY: ${{ matrix.collection.collection }}
+          COLLECTION_STRING: ${{ matrix.collection.collection || matrix.collection }}
+          VERSION: ${{ matrix.collection.version }}
         run: |
-          if [[ "${{ matrix.collection.version }}" ]] ; then
-            export PUPPET_VERSION=${{ matrix.collection.version }}
-            bundle exec rake 'litmus:install_agent[${{ matrix.collection.collection }}]'
+          if [[ "$VERSION" ]] ; then
+            export PUPPET_VERSION="$VERSION"
+            bundle exec rake "litmus:install_agent[$COLLECTION_KEY]"
           else
-            bundle exec rake 'litmus:install_agent[${{ matrix.collection }}]'
+            bundle exec rake "litmus:install_agent[$COLLECTION_STRING]"
           fi
 
       - name: "Install module"

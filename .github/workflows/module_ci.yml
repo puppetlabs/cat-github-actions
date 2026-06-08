@@ -30,10 +30,21 @@ on:
         default: ''
         type: "string"
 
+permissions:
+  contents: read
+
 jobs:
   setup_matrix:
     name: "Setup Test Matrix"
     runs-on: ${{ inputs.runs_on }}
+    # Defense-in-depth: on `pull_request_target` (where this workflow runs
+    # with secrets in scope), fork PRs require the `allowed-for-ci` label.
+    # Non-`pull_request_target` invocations (plain `pull_request`,
+    # `workflow_dispatch`, etc.) are unaffected and continue to run.
+    if: >-
+      github.event_name != 'pull_request_target' ||
+      github.event.pull_request.head.repo.fork != true ||
+      contains(github.event.pull_request.labels.*.name, 'allowed-for-ci')
     outputs:
       spec_matrix: ${{ steps.get-matrix.outputs.spec_matrix }}
 
@@ -43,9 +54,10 @@ jobs:
     steps:
 
       - name: "Checkout"
-        uses: "actions/checkout@v4"
+        uses: "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10"  # v6.0.3
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
 
       - name: "Install additional packages"
         if: ${{ inputs.additional_packages != '' }}
@@ -61,7 +73,7 @@ jobs:
           fi
 
       - name: "Setup ruby"
-        uses: "ruby/setup-ruby@v1"
+        uses: "ruby/setup-ruby@afeafc3d1ab54a631816aba4c914a0081c12ff2f"  # v1.310.0
         with:
           ruby-version: ${{ inputs.ruby_version }}
           bundler-cache: true
@@ -92,9 +104,10 @@ jobs:
 
     steps:
       - name: "Checkout"
-        uses: "actions/checkout@v4"
+        uses: "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10"  # v6.0.3
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
 
       - name: "Install additional packages"
         if: ${{ inputs.additional_packages != '' }}
@@ -110,7 +123,7 @@ jobs:
           fi
 
       - name: "Setup ruby"
-        uses: "ruby/setup-ruby@v1"
+        uses: "ruby/setup-ruby@afeafc3d1ab54a631816aba4c914a0081c12ff2f"  # v1.310.0
         with:
           ruby-version: ${{matrix.ruby_version}}
           bundler-cache: true
@@ -122,7 +135,7 @@ jobs:
           echo ::endgroup::
 
       - name: "shellcheck"
-        uses: reviewdog/action-shellcheck@v1
+        uses: reviewdog/action-shellcheck@4c07458293ac342d477251099501a718ae5ef86e  # v1
         if: |
           inputs.run_shellcheck &&
           inputs.runs_on == 'ubuntu-latest' &&
