@@ -1,0 +1,99 @@
+# This is a generic workflow for running `pdk update` against a Puppet module
+# and opening (or refreshing) a PR with the resulting template changes.
+#
+# Behaviour:
+# - Runs `pdk update --force` on the calling repository.
+# - If the update produces no changes, no branch or PR is created.
+# - If there are changes, they are committed to the `pdk_update` branch and a
+#   PR is opened against the default branch.
+# - Because the branch name is fixed, a subsequent run force-updates the same
+#   branch and overwrites the existing open PR instead of opening a new one.
+#
+# The default `GITHUB_TOKEN` is used to push the branch and open the PR. Note
+# that PRs created with `GITHUB_TOKEN` do not themselves trigger further
+# workflow runs (e.g. CI). To have CI run on the PR, pass a PAT or app token as
+# the `token` secret.
+name: "Module PDK Update"
+
+on:
+  workflow_call:
+    inputs:
+      ruby_version:
+        description: "The target Ruby version."
+        required: false
+        default: "3.1"
+        type: "string"
+      runs_on:
+        description: "The operating system used for the runner."
+        required: false
+        default: "ubuntu-latest"
+        type: "string"
+      pdk_version:
+        description: "Version of the pdk gem to install. Empty installs the latest."
+        required: false
+        default: ''
+        type: "string"
+    secrets:
+      token:
+        description: "Token used to push the branch and open the PR. Defaults to GITHUB_TOKEN."
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  pdk_update:
+    name: "PDK Update"
+    runs-on: ${{ inputs.runs_on }}
+
+    steps:
+
+      - name: "Checkout"
+        uses: "actions/checkout@v6"
+        with:
+          fetch-depth: 0
+
+      - name: "Setup ruby"
+        uses: "ruby/setup-ruby@v1"
+        with:
+          ruby-version: ${{ inputs.ruby_version }}
+
+      - name: "Install pdk"
+        run: |
+          if [ -n "${{ inputs.pdk_version }}" ]; then
+            gem install pdk --version "${{ inputs.pdk_version }}" --no-document
+          else
+            gem install pdk --no-document
+          fi
+
+      - name: "Run pdk update"
+        run: |
+          pdk update --force
+
+      - name: "Gather template info"
+        id: "template"
+        run: |
+          # pdk records the template it synced against in metadata.json.
+          echo "url=$(jq --raw-output '."template-url" // "unknown"' metadata.json)" >> $GITHUB_OUTPUT
+          echo "ref=$(jq --raw-output '."template-ref" // "unknown"' metadata.json)" >> $GITHUB_OUTPUT
+          echo "pdk_version=$(pdk --version)" >> $GITHUB_OUTPUT
+
+      - name: "Create pull request"
+        uses: "peter-evans/create-pull-request@v7"
+        with:
+          token: ${{ secrets.token || secrets.GITHUB_TOKEN }}
+          commit-message: "(maint) PDK Update"
+          branch: "pdk_update"
+          delete-branch: true
+          base: ${{ github.event.repository.default_branch }}
+          title: "(maint) PDK Update"
+          body: |
+            Automated `pdk update` from commit ${{ github.sha }}.
+
+            This PR applies the latest [pdk-templates](https://github.com/puppetlabs/pdk-templates) changes to the module. Please review the diff before merging.
+
+            - **Template URL:** `${{ steps.template.outputs.url }}`
+            - **Template ref:** `${{ steps.template.outputs.ref }}`
+            - **PDK version:** `${{ steps.template.outputs.pdk_version }}`
+          labels: "maintenance"
