@@ -1,51 +1,133 @@
-# Claude in This Repository
+# CLAUDE.md
 
-## How Claude Is Used
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Claude runs automatically on every pull request via GitHub Actions. It does **not** need to be invoked manually — it triggers on its own whenever a PR is opened, updated, marked ready for review, or reopened.
+## Hard Constraints
 
-Draft PRs are skipped. Claude will begin reviewing once a PR is marked ready for review.
+- At the start of a session, review the repository structure and any relevant
+  README or documentation files to understand the area you are working in.
+- Always read the files relevant to the task before suggesting or making a change.
+- Never merge a pull request.
+- Never work directly on the `main` or `master` branch.
+- Never push a branch without explicit instruction. These workflows are consumed
+  by many downstream repositories — an accidental push affects every consumer.
+- Never delete a file without permission — this applies even after a blanket
+  "yes to all".
+- Never output, log, save, or hardcode security-sensitive values — passwords,
+  tokens, API keys, private keys, secrets, or credentials of any kind.
 
-## What Triggers a Review
+These are enforced by `PreToolUse` hooks in `.claude/settings.json`
+(`no-pr-merge.sh`, `no-main-commits.sh`, `no-push.sh`, `no-rm.sh`).
 
-The workflow fires on these PR events:
+## What This Repo Is
 
-- `opened` — a new PR is created
-- `synchronize` — new commits are pushed to an existing PR
-- `ready_for_review` — a draft PR is promoted to ready
-- `reopened` — a previously closed PR is reopened
+This repository is a **library of reusable GitHub Actions workflows** for the
+Content and Tooling (CAT) team at Puppet/Perforce. It contains almost no
+application code — the deliverables are the workflow YAML files themselves.
+Downstream Puppet **modules** and Ruby **gems/tools** consume these workflows to
+get standardized CI, acceptance testing, vulnerability scanning, and release
+automation without duplicating the logic in every repo.
 
-## What Claude Does
+There is nothing to build. The unit of work is editing a workflow definition and
+reasoning about how it behaves when called from another repository.
 
-Claude reviews the pull request and posts its feedback as a PR comment. Only one review runs at a time per PR — if a new commit is pushed while a review is in progress, the in-flight review is cancelled and a fresh one starts.
+## Architecture
 
-## Workflow Location
+Almost every workflow under [.github/workflows/](.github/workflows/) is a
+**reusable workflow** — it begins with `on: workflow_call:` and declares typed
+`inputs`. Consumers reference them by full path and ref, e.g.:
 
-The GitHub Actions workflow is defined at:
-
+```yaml
+jobs:
+  Spec:
+    uses: "puppetlabs/cat-github-actions/.github/workflows/module_ci.yml@main"
+    secrets: "inherit"
 ```
-.github/workflows/claude-pr.yml
+
+The workflows split along two product lines and a lifecycle:
+
+| Domain      | CI / Test                                 | Security        | Release                                         |
+| ----------- | ----------------------------------------- | --------------- | ----------------------------------------------- |
+| **Modules** | `module_ci.yml`, `module_acceptance.yml`  | `mend_ruby.yml` | `module_release_prep.yml`, `module_release.yml` |
+| **Gems**    | `gem_ci.yml`, `gem_acceptance.yml`        | `tooling_mend_ruby.yml` | `gem_release_prep.yml`, `gem_release.yml`       |
+
+Cross-cutting workflows:
+
+- [lint.yml](.github/workflows/lint.yml) — the **only** workflow that runs on
+  this repo's own pushes/PRs (not `workflow_call`); yamllints `.github/`.
+- [claude-pr.yml](.github/workflows/claude-pr.yml) — auto PR review (see below).
+- [fork_ci_label_guard.yml](.github/workflows/fork_ci_label_guard.yml) — part of
+  the fork-PR security model (see below).
+- [workflow-restarter.yml](.github/workflows/workflow-restarter.yml) +
+  [.github/actions/workflow-restarter-proxy/](.github/actions/workflow-restarter-proxy/) —
+  a workflow cannot re-trigger itself, so a caller uses the composite *proxy
+  action* to dispatch the *restarter workflow*, which retries a failed run up to
+  N times. See [docs/workflow-restarter.md](docs/workflow-restarter.md).
+
+[example/module/](example/module/) holds copy-paste **caller** workflows showing
+how a consuming module wires these together. These are the canonical reference
+for the intended consumption pattern — read them before changing an interface.
+
+## Conventions When Editing Workflows
+
+- **Inputs are a public API.** Renaming or removing an input, or changing a
+  default, breaks every downstream caller. Add new inputs with sensible defaults
+  rather than repurposing existing ones, and update [example/module/](example/module/)
+  and [README.md](README.md) to match.
+- **Pin actions to a major-version tag** (e.g. `actions/checkout@v6`,
+  `peter-evans/create-pull-request@v7`). Use a commit SHA (with a trailing
+  version comment, e.g. `reviewdog/action-shellcheck@4c07...86e  # v1`) only
+  when a specific revision must be brought in — for example to satisfy a
+  security review, as the fork-CI workflows do.
+- **Secrets reach reusable workflows only when the caller sets `secrets: inherit`.**
+  Release and acceptance workflows document this requirement in a header comment.
+- The matrix for module CI/acceptance is generated by
+  `bundle exec matrix_from_metadata_v3` (from the consuming module's metadata).
+- Forge auth uses `secrets.PUPPET_FORGE_TOKEN || secrets.PUPPET_FORGE_TOKEN_PUBLIC`,
+  written into `$GITHUB_ENV` as `PUPPET_FORGE_TOKEN`.
+
+## Fork PR Security Model
+
+Acceptance tests need secrets, but running them automatically on fork PRs would
+leak those secrets. The pattern (see [docs/how-to/fork-pr-ci.md](docs/how-to/fork-pr-ci.md)
+and [example/module/ci.yml](example/module/ci.yml)):
+
+- **Public track:** unit/spec tests run via `pull_request` with **no** secrets.
+- **Private track:** acceptance runs via `pull_request_target` (which exposes
+  secrets), gated on an `allowed-for-ci` label that only a CODEOWNER can apply.
+- `fork_ci_label_guard.yml` **strips** that label on `synchronize`/`closed`, so
+  every new commit re-requires a fresh CODEOWNER review and re-label. The caller
+  intentionally omits `synchronize` from its acceptance trigger to avoid racing
+  the guard.
+
+When touching anything in this area, preserve the property that **untrusted code
+from a fork can never run with secrets without a CODEOWNER re-approving the
+exact commits**.
+
+## Linting
+
+CI lints YAML only. To reproduce locally:
+
+```bash
+yamllint -c .yamllint .github/
 ```
 
-## Required Secrets
+Config: [.yamllint](.yamllint) extends `default` and disables `document-start`,
+`truthy`, and `line-length`.
 
-The workflow requires the following secrets to be configured in the repository (or organization) settings:
+## Claude PR Review
 
-| Secret                      | Purpose                                                                |
-| --------------------------- | ---------------------------------------------------------------------- |
-| `ANTHROPIC_CODE_REVIEW_KEY` | Anthropic API key used to authenticate Claude                          |
-| `GITHUB_TOKEN`              | Automatically provided by GitHub Actions; used to post review comments |
+`claude-pr.yml` runs Claude automatically on every PR (opened, synchronize,
+ready_for_review, reopened); draft PRs are skipped. It posts advisory review
+comments and requires the `ANTHROPIC_CODE_REVIEW_KEY` secret (plus the
+auto-provided `GITHUB_TOKEN`). Only one review runs per PR at a time —
+in-flight reviews are cancelled when new commits arrive. Merge decisions remain
+with human reviewers.
 
-## Permissions
+## Note on the Two `claude` Directories
 
-Claude's workflow runs with the following GitHub permissions:
-
-- `contents: read` — to check out and read the code
-- `pull-requests: write` — to post review comments on the PR
-
-## Notes for Contributors
-
-- You do not need to do anything to trigger a review — it runs automatically.
-- If you push additional commits, the previous review job will be cancelled and a new one will start.
-- Claude's comments will appear in the PR alongside human reviewer comments.
-- Claude's feedback is advisory. Merging decisions remain with human reviewers.
+- [.claude/](.claude/) — local Claude Code config for *this* repo (the
+  enforcement hooks above). Not consumed by downstream repos.
+- [claude/github-integration/](claude/github-integration/) — a Claude Code
+  *plugin/skill* (`init-repo`) that bootstraps Claude PR-review integration into
+  *other* repositories. Unrelated to `.claude/`.
