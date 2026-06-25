@@ -12,6 +12,10 @@ on:
         default: "main"
         type: "string"
 
+env:
+  PUPPET_FORGE_TOKEN: ${{ secrets.PUPPET_FORGE_TOKEN || secrets.PUPPET_FORGE_TOKEN_PUBLIC }}
+  BUNDLE_RUBYGEMS___PUPPETCORE__PUPPET__COM: "forge-key:${{ secrets.PUPPET_FORGE_TOKEN || secrets.PUPPET_FORGE_TOKEN_PUBLIC }}"
+
 jobs:
   release:
     name: "Release"
