@@ -12,6 +12,13 @@ on:
         default: "main"
         type: "string"
 
+# ENABLE PUPPETCORE. The calling workflow must set `secrets: inherit` and a valid
+# PUPPET_FORGE_TOKEN secret so `bundle install` can authenticate to the
+# rubygems-puppetcore.puppet.com source when the Gemfile uses it.
+env:
+  PUPPET_FORGE_TOKEN: ${{ secrets.PUPPET_FORGE_TOKEN || secrets.PUPPET_FORGE_TOKEN_PUBLIC }}
+  BUNDLE_RUBYGEMS___PUPPETCORE__PUPPET__COM: "forge-key:${{ secrets.PUPPET_FORGE_TOKEN || secrets.PUPPET_FORGE_TOKEN_PUBLIC }}"
+
 jobs:
   release:
     name: "Release"
