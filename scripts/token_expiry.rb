@@ -42,6 +42,6 @@ raise "Request failed: #{keys_response.code} #{keys_response.body}" unless keys_
 body = JSON.parse(keys_response.body)
 keys = body["results"]
   .map { |key| { id: key["id"], expires_at: key["expires_at"], remaining_days: key["remaining_days"] } }
-  .select { |key| key[:remaining_days] && key[:remaining_days] < 20 }
+  .select { |key| key[:remaining_days] && key[:remaining_days] < 30 }
 
 puts keys.inspect
