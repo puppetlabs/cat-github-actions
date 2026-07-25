@@ -50,7 +50,6 @@ jobs:
 
     env:
       BUNDLE_WITHOUT: release_prep
-      TWINGATE_PUBLIC_REPO_KEY: ${{ secrets.TWINGATE_PUBLIC_REPO_KEY }}
 
     steps:
 
@@ -64,42 +63,13 @@ jobs:
         if: ${{ inputs.additional_packages != '' }}
         run: sudo apt-get install -y ${{ inputs.additional_packages }}
 
-      - name: "Install Twingate"
-        if: env.TWINGATE_PUBLIC_REPO_KEY != ''
-        uses: "twingate/github-action@f1e69fc5af67b737d8597b759e5c607f567e77f2"  # v1
-        with:
-          service-key: ${{ env.TWINGATE_PUBLIC_REPO_KEY }}
-
-      - name: "Fix DNS"
-        if: env.TWINGATE_PUBLIC_REPO_KEY != ''
-        run: |
-          echo "=== Remove Azure DNS from eth0 interface ==="
-          sudo resolvectl dns eth0 ""
-
-          echo "=== Configure Twingate DNS properly ==="
-          sudo resolvectl dns sdwan0 100.95.0.251 100.95.0.252
-          sudo resolvectl domain sdwan0 delivery.puppetlabs.net
-
-          echo "=== Flush DNS cache ==="
-          sudo resolvectl flush-caches
-
-          echo "=== Check new configuration ==="
-          resolvectl status
-
-          echo "=== Test DNS resolution ==="
-          nslookup artifactory.delivery.puppetlabs.net
-
       - name: "Configure forge authentication"
         env:
           FORGE_TOKEN: ${{ secrets.PUPPET_FORGE_TOKEN || secrets.PUPPET_FORGE_TOKEN_PUBLIC }}
-          GEM_SOURCE: ${{ secrets.PUPPET_GEM_SOURCE }}
         run: |
           if [ -n "$FORGE_TOKEN" ]; then
             echo "PUPPET_FORGE_TOKEN=$FORGE_TOKEN" >> $GITHUB_ENV
             echo "BUNDLE_RUBYGEMS___PUPPETCORE__PUPPET__COM=forge-key:$FORGE_TOKEN" >> $GITHUB_ENV
-          fi
-          if [ -n "$GEM_SOURCE" ]; then
-            echo "PUPPET_GEM_SOURCE=$GEM_SOURCE" >> $GITHUB_ENV
           fi
 
       - name: "Setup ruby"
