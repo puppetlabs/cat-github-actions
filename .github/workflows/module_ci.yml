@@ -101,6 +101,11 @@ jobs:
       BUNDLE_WITHOUT: release_prep
       PUPPET_GEM_VERSION: ${{ matrix.puppet_version }}
       FACTER_GEM_VERSION: '~> 4.10'
+      # Puppet 9 (8.99.x) prereleases live in an internal rubygems repo; the module Gemfile
+      # reads PUPPET_GEM_SOURCE to fetch them. Inherited from the calling repo's secret; empty
+      # for repos that don't set it, in which case the Gemfile falls back to puppetcore.
+      PUPPET_GEM_SOURCE: ${{ secrets.PUPPET_GEM_SOURCE }}
+      TWINGATE_PUBLIC_REPO_KEY: ${{ secrets.TWINGATE_PUBLIC_REPO_KEY }}
 
     steps:
       - name: "Checkout"
@@ -121,6 +126,25 @@ jobs:
             echo "PUPPET_FORGE_TOKEN=$FORGE_TOKEN" >> $GITHUB_ENV
             echo "BUNDLE_RUBYGEMS___PUPPETCORE__PUPPET__COM=forge-key:$FORGE_TOKEN" >> $GITHUB_ENV
           fi
+
+      # The Puppet 9 lane resolves its gem from the internal Artifactory (PUPPET_GEM_SOURCE),
+      # which is only reachable over Twingate. Gated to the puppet9 lane + key presence, so
+      # Puppet 7/8 spec runs and repos without the key are completely unaffected.
+      - name: "Install Twingate"
+        if: matrix.puppet_version == '~> 9.0' && env.TWINGATE_PUBLIC_REPO_KEY != ''
+        uses: "twingate/github-action@f1e69fc5af67b737d8597b759e5c607f567e77f2"  # v1
+        with:
+          service-key: ${{ env.TWINGATE_PUBLIC_REPO_KEY }}
+
+      - name: "Fix DNS (Twingate)"
+        if: matrix.puppet_version == '~> 9.0' && env.TWINGATE_PUBLIC_REPO_KEY != ''
+        run: |
+          sudo resolvectl dns eth0 ""
+          sudo resolvectl dns sdwan0 100.95.0.251 100.95.0.252
+          sudo resolvectl domain sdwan0 delivery.puppetlabs.net
+          sudo resolvectl flush-caches
+          resolvectl status
+          nslookup artifactory.delivery.puppetlabs.net
 
       - name: "Setup ruby"
         uses: "ruby/setup-ruby@afeafc3d1ab54a631816aba4c914a0081c12ff2f"  # v1.310.0
