@@ -26,6 +26,11 @@ on:
         description: "Disable and stop apparmor"
         default: false
         type: boolean
+      ruby_version:
+        description: "Ruby version to use"
+        required: false
+        default: '3.1'
+        type: "string"
 
 
 permissions:
@@ -72,7 +77,7 @@ jobs:
       - name: "Setup ruby"
         uses: "ruby/setup-ruby@afeafc3d1ab54a631816aba4c914a0081c12ff2f"  # v1.310.0
         with:
-          ruby-version: "3.1"
+          ruby-version: ${{ inputs.ruby_version }}
           bundler-cache: true
 
       - name: "Bundle environment"
@@ -184,7 +189,7 @@ jobs:
       - name: "Setup ruby"
         uses: "ruby/setup-ruby@afeafc3d1ab54a631816aba4c914a0081c12ff2f"  # v1.310.0
         with:
-          ruby-version: "3.1"
+          ruby-version: ${{ inputs.ruby_version }}
           bundler-cache: true
 
       - name: "Bundle environment"

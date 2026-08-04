@@ -14,6 +14,11 @@ on:
       product_name:
         default: 'content-and-tooling'
         type: string
+      ruby_version:
+        description: "Ruby version to use"
+        required: false
+        default: '3.1'
+        type: "string"
 
 env:
   MEND_API_KEY: ${{ secrets.MEND_API_KEY != '' && secrets.MEND_API_KEY || inputs.api_key }}
@@ -46,9 +51,9 @@ jobs:
 
       - name: "setup ruby"
         if: success()
-        uses: "ruby/setup-ruby@v1"
+        uses: "ruby/setup-ruby@afeafc3d1ab54a631816aba4c914a0081c12ff2f"  # v1.310.0
         with:
-          ruby-version: 3.1
+          ruby-version: ${{ inputs.ruby_version }}
 
       - name: "bundle lock"
         if: success()
