@@ -22,7 +22,7 @@ on:
       ruby_version:
         description: "Ruby version to use"
         required: false
-        default: '3.1'
+        default: '3.2'
         type: "string"
       additional_packages:
         description: "Space-separated list of OS packages to install on the runner (apt-get)"
