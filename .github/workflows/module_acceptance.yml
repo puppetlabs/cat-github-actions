@@ -233,3 +233,25 @@ jobs:
       - name: "Install module"
         run: |
           bundle exec rake 'litmus:install_module'
+
+      - name: "Run acceptance tests"
+        run: |
+          bundle exec rake 'litmus:acceptance:parallel'
+
+      # TEMPORARY debug step (MODULES-11727): only fires if the acceptance run above
+      # fails, so passing jobs are unaffected. Keeps the runner (and its still-live
+      # target container) alive for interactive SSH via tmate.dev, so we can inspect
+      # target-side logs (e.g. sshd) live instead of guessing from CI logs after the
+      # fact. Bounded to 30 minutes so the job can't hang indefinitely.
+      - name: "Debug session on failure"
+        if: failure()
+        timeout-minutes: 30
+        uses: "mxschmitt/action-tmate@v3"
+
+      - name: "Remove test environment"
+        if: ${{ always() }}
+        continue-on-error: true
+        run: |
+          if [[ -f spec/fixtures/litmus_inventory.yaml ]]; then
+            bundle exec rake 'litmus:tear_down'
+          fi
