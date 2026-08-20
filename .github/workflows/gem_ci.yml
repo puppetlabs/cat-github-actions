@@ -7,7 +7,7 @@ on:
       ruby_version:
         description: "The target Ruby version."
         required: false
-        default: "3.1"
+        default: "3.2"
         type: "string"
       puppet_gem_version:
         description: "Specifies the version of the Puppet gem to be installed"
@@ -89,7 +89,7 @@ jobs:
         if: |
           contains(inputs.rake_task, 'coverage') &&
           inputs.runs_on == 'ubuntu-latest' &&
-          inputs.ruby_version == '3.1' &&
+          inputs.ruby_version == '3.2' &&
           env.CODECOV_TOKEN != ''
         uses: codecov/codecov-action@v4
         with:
