@@ -61,7 +61,12 @@ jobs:
 
       - name: "Install additional packages"
         if: ${{ inputs.additional_packages != '' }}
-        run: sudo apt-get install -y ${{ inputs.additional_packages }}
+        # Refresh the package index first: the runner image's baked-in apt lists can lag
+        # behind the live archive, so installing straight away can 404 on a package whose
+        # exact cached version has since been superseded and evicted from the mirror pool.
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ inputs.additional_packages }}
 
       - name: "Configure forge authentication"
         env:
@@ -116,7 +121,12 @@ jobs:
 
       - name: "Install additional packages"
         if: ${{ inputs.additional_packages != '' }}
-        run: sudo apt-get install -y ${{ inputs.additional_packages }}
+        # Refresh the package index first: the runner image's baked-in apt lists can lag
+        # behind the live archive, so installing straight away can 404 on a package whose
+        # exact cached version has since been superseded and evicted from the mirror pool.
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ inputs.additional_packages }}
 
       - name: "Configure forge authentication"
         env:
