@@ -1,0 +1,49 @@
+name: claude-worker
+
+on:
+  workflow_dispatch:
+    inputs:
+      prompt:
+        required: true
+        type: string
+        description: "The task prompt for Claude."
+      model:
+        required: false
+        type: string
+        default: "claude-sonnet-4-6-20250514"
+        description: "Anthropic model to use."
+      max_turns:
+        required: false
+        type: number
+        default: 10
+        description: "Maximum agent turns."
+      allowed_tools:
+        required: false
+        type: string
+        default: "Read,Edit,Write,Grep,Glob,Bash"
+        description: "Comma-separated tools the agent may use."
+
+concurrency:
+  group: claude-worker
+  cancel-in-progress: false
+
+jobs:
+  worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude agent
+        uses: anthropics/claude-code-action/base-action@7ada98c10deffc4c13fe5079693edf312888ff3b  # v1
+        env:
+          ANTHROPIC_MODEL: ${{ inputs.model }}
+        with:
+          prompt: ${{ inputs.prompt }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_CODE_REVIEW_KEY }}
+          show_full_output: "true"
+          claude_args: --max-turns ${{ inputs.max_turns }} --allowedTools '${{ inputs.allowed_tools }}'
