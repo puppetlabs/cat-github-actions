@@ -1,6 +1,9 @@
 name: claude-worker
 
 on:
+  pull_request:
+    paths:
+      - ".github/workflows/claude-worker.yml"
   workflow_dispatch:
     inputs:
       prompt:
@@ -24,7 +27,7 @@ on:
         description: "Comma-separated tools the agent may use."
 
 concurrency:
-  group: claude-worker
+  group: claude-worker-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -41,9 +44,9 @@ jobs:
       - name: Run Claude agent
         uses: anthropics/claude-code-action/base-action@7ada98c10deffc4c13fe5079693edf312888ff3b  # v1
         env:
-          ANTHROPIC_MODEL: ${{ inputs.model }}
+          ANTHROPIC_MODEL: ${{ inputs.model || 'claude-sonnet-4-6-20250514' }}
         with:
-          prompt: ${{ inputs.prompt }}
+          prompt: ${{ inputs.prompt || 'List the files in this repository and write a one-paragraph summary of what it does.' }}
           anthropic_api_key: ${{ secrets.ANTHROPIC_CODE_REVIEW_KEY }}
           show_full_output: "true"
-          claude_args: --max-turns ${{ inputs.max_turns }} --allowedTools '${{ inputs.allowed_tools }}'
+          claude_args: --max-turns ${{ inputs.max_turns || 5 }} --allowedTools '${{ inputs.allowed_tools || 'Read,Glob,Grep' }}'
