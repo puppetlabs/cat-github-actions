@@ -111,6 +111,7 @@ jobs:
       # for repos that don't set it, in which case the Gemfile falls back to puppetcore.
       PUPPET_GEM_SOURCE: ${{ secrets.PUPPET_GEM_SOURCE }}
       TWINGATE_PUBLIC_REPO_KEY: ${{ secrets.TWINGATE_PUBLIC_REPO_KEY }}
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
     steps:
       - name: "Checkout"
@@ -185,3 +186,15 @@ jobs:
       - name: "Run tests"
         run: |
           bundle exec rake parallel_spec
+
+      - name: "Upload coverage reports to Codecov"
+        if: |
+          inputs.runs_on == 'ubuntu-latest' &&
+          matrix.ruby_version == '3.2' &&
+          env.CODECOV_TOKEN != ''
+        uses: "codecov/codecov-action@v4"
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/.resultset.json
+          fail_ci_if_error: true
+          verbose: true
