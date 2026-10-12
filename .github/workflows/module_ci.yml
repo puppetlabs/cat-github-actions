@@ -184,6 +184,9 @@ jobs:
           bundle exec dependency-checker metadata.json
 
       - name: "Run tests"
+        env:
+          # Generate coverage/.resultset.json for the Codecov upload below (same condition).
+          SIMPLECOV: ${{ (inputs.runs_on == 'ubuntu-latest' && matrix.ruby_version == '3.2' && env.CODECOV_TOKEN != '') && 'yes' || 'no' }}
         run: |
           bundle exec rake parallel_spec
 
