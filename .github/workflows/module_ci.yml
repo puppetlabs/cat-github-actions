@@ -61,9 +61,10 @@ jobs:
 
       - name: "Install additional packages"
         if: runner.os == 'Linux'
-        # libcurl4-openssl-dev is always installed: puppet_litmus -> bolt -> faraday-patron
-        # pulls in patron, whose native extension needs libcurl headers the runner image
-        # doesn't ship (fails bundle install on the Ruby 4 lane).
+        # libcurl4-openssl-dev is always installed for the Ruby 4 lane: faraday-follow_redirects
+        # <= 0.4 requires ruby < 4, so bundler can't use puppet_forge 4.x-6.0.x there and falls
+        # back to r10k 3.x -> puppet_forge 3.2 -> faraday 1.x. faraday 1.x depends on its adapter
+        # gems, including faraday-patron -> patron, a native extension that needs libcurl headers.
         # Refresh the package index first: the runner image's baked-in apt lists can lag
         # behind the live archive, so installing straight away can 404 on a package whose
         # exact cached version has since been superseded and evicted from the mirror pool.
@@ -125,9 +126,10 @@ jobs:
 
       - name: "Install additional packages"
         if: runner.os == 'Linux'
-        # libcurl4-openssl-dev is always installed: puppet_litmus -> bolt -> faraday-patron
-        # pulls in patron, whose native extension needs libcurl headers the runner image
-        # doesn't ship (fails bundle install on the Ruby 4 lane).
+        # libcurl4-openssl-dev is always installed for the Ruby 4 lane: faraday-follow_redirects
+        # <= 0.4 requires ruby < 4, so bundler can't use puppet_forge 4.x-6.0.x there and falls
+        # back to r10k 3.x -> puppet_forge 3.2 -> faraday 1.x. faraday 1.x depends on its adapter
+        # gems, including faraday-patron -> patron, a native extension that needs libcurl headers.
         # Refresh the package index first: the runner image's baked-in apt lists can lag
         # behind the live archive, so installing straight away can 404 on a package whose
         # exact cached version has since been superseded and evicted from the mirror pool.
