@@ -25,7 +25,7 @@ on:
         default: '3.2'
         type: "string"
       additional_packages:
-        description: "Space-separated list of OS packages to install on the runner (apt-get)"
+        description: "Space-separated list of extra OS packages to install on the runner (apt-get), in addition to libcurl4-openssl-dev"
         required: false
         default: ''
         type: "string"
@@ -60,13 +60,16 @@ jobs:
           persist-credentials: false
 
       - name: "Install additional packages"
-        if: ${{ inputs.additional_packages != '' }}
+        if: runner.os == 'Linux'
+        # libcurl4-openssl-dev is always installed: puppet_litmus -> bolt -> faraday-patron
+        # pulls in patron, whose native extension needs libcurl headers the runner image
+        # doesn't ship (fails bundle install on the Ruby 4 lane).
         # Refresh the package index first: the runner image's baked-in apt lists can lag
         # behind the live archive, so installing straight away can 404 on a package whose
         # exact cached version has since been superseded and evicted from the mirror pool.
         run: |
           sudo apt-get update
-          sudo apt-get install -y ${{ inputs.additional_packages }}
+          sudo apt-get install -y libcurl4-openssl-dev ${{ inputs.additional_packages }}
 
       - name: "Configure forge authentication"
         env:
@@ -121,13 +124,16 @@ jobs:
           persist-credentials: false
 
       - name: "Install additional packages"
-        if: ${{ inputs.additional_packages != '' }}
+        if: runner.os == 'Linux'
+        # libcurl4-openssl-dev is always installed: puppet_litmus -> bolt -> faraday-patron
+        # pulls in patron, whose native extension needs libcurl headers the runner image
+        # doesn't ship (fails bundle install on the Ruby 4 lane).
         # Refresh the package index first: the runner image's baked-in apt lists can lag
         # behind the live archive, so installing straight away can 404 on a package whose
         # exact cached version has since been superseded and evicted from the mirror pool.
         run: |
           sudo apt-get update
-          sudo apt-get install -y ${{ inputs.additional_packages }}
+          sudo apt-get install -y libcurl4-openssl-dev ${{ inputs.additional_packages }}
 
       - name: "Configure forge authentication"
         env:
