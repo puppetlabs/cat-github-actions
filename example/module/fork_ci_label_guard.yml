@@ -1,5 +1,9 @@
 name: "Fork CI Label Guard"
 
+# Only needed when the caller's ci.yml doesn't run the guard itself. The
+# example ci.yml (and pdk-templates' ci.yml) include it as the
+# Fork_CI_Label_Guard job, so a module using either needs no separate file.
+
 # Strips the `allowed-for-ci` label from a fork PR whenever it is updated in
 # a way that could invalidate the prior CODEOWNER review:
 #   - `synchronize`: a new commit is pushed.

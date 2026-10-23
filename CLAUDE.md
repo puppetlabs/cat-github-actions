@@ -97,8 +97,9 @@ and [example/module/ci.yml](example/module/ci.yml)):
   secrets), gated on an `allowed-for-ci` label that only a CODEOWNER can apply.
 - `fork_ci_label_guard.yml` **strips** that label on `synchronize`/`closed`, so
   every new commit re-requires a fresh CODEOWNER review and re-label. The caller
-  intentionally omits `synchronize` from its acceptance trigger to avoid racing
-  the guard.
+  runs it as a job in `ci.yml`, and gates fork acceptance on the `allowed-for-ci`
+  labeling event itself (never on the label's presence), so a `synchronize`
+  payload that still carries the label can't start acceptance.
 
 When touching anything in this area, preserve the property that **untrusted code
 from a fork can never run with secrets without a CODEOWNER re-approving the

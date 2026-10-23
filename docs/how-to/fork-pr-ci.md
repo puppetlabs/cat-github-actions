@@ -54,7 +54,7 @@ The acceptance job uses the environment only on fork PRs (see `module_acceptance
 
 ### 5. Update the caller workflows
 
-Replace `.github/workflows/ci.yml` with the two-track pattern (see [example/module/ci.yml](../../example/module/ci.yml)). Add a new file `.github/workflows/fork_ci_label_guard.yml` that strips the label on each new commit (see [example/module/fork_ci_label_guard.yml](../../example/module/fork_ci_label_guard.yml)).
+Replace `.github/workflows/ci.yml` with the two-track pattern (see [example/module/ci.yml](../../example/module/ci.yml)). Its `Fork_CI_Label_Guard` job strips the label on each new commit and on close. Modules that render `ci.yml` from pdk-templates get the same job. Only a caller whose `ci.yml` doesn't include that job needs the separate `.github/workflows/fork_ci_label_guard.yml` (see [example/module/fork_ci_label_guard.yml](../../example/module/fork_ci_label_guard.yml)); don't use both.
 
 Keep "Require approval for first-time contributors" enabled at the org Actions setting — it's an additional pre-execution gate independent of this design.
 
@@ -75,8 +75,8 @@ The Spec track has already run by the time the reviewer sees the PR; review its 
 
 - A fork contributor opens a PR. `Spec` runs immediately (public track, no secrets). `Acceptance` does not run.
 - A CODEOWNER reviews the diff, focusing on the files above, and applies `allowed-for-ci`. The `labeled` event triggers the workflow on `pull_request_target`. A single `approval_gate` job (non-matrix) targets the `puppetcore-fork` environment and pauses for environment approval — the approval prompt shows the head SHA being deployed, which the reviewer should compare against the SHA they reviewed before approving. A `@puppetlabs/modules` member approves; `approval_gate` completes; the matrix `acceptance` jobs then run with `PUPPET_FORGE_TOKEN` in scope.
-- If the contributor pushes a new commit, `fork_ci_label_guard.yml` fires on `synchronize` and removes the label. The main caller workflow does **not** include `synchronize` in its `pull_request_target` trigger, so no acceptance run is created for the new commit. To run acceptance against the new code, a CODEOWNER must review again and re-apply the label.
-- If the PR is closed, `fork_ci_label_guard.yml` also fires on `closed` and removes the label. This prevents an attack where a contributor closes the PR, pushes new commits (no events fire on a closed PR), then reopens — without close-strip the label would persist across the reopen and the new commits would inherit the prior authorisation. Side effect: closing a merged PR also strips the label, which is cosmetic (the label is only meaningful for open PRs).
+- If the contributor pushes a new commit, the guard job fires on `synchronize` and removes the label. Acceptance does not run on that event: for fork PRs it requires the `labeled` event for `allowed-for-ci` itself, not just the label's presence (a `synchronize` payload still carries the label until the guard removes it). The `synchronize` run also cancels that PR's in-flight acceptance through the concurrency group. To run acceptance against the new code, a CODEOWNER must review again and re-apply the label.
+- If the PR is closed, the guard job also fires on `closed` and removes the label. This prevents an attack where a contributor closes the PR, pushes new commits (no events fire on a closed PR), then reopens — without close-strip the label would persist across the reopen and the new commits would inherit the prior authorisation. Side effect: closing a merged PR also strips the label, which is cosmetic (the label is only meaningful for open PRs).
 
 ## Verification
 
@@ -104,7 +104,8 @@ This is tracked as a follow-up to the initial pilot. The approval gate on the `p
 
 ## Security considerations
 
-- Do **not** add `synchronize` to the `pull_request_target` types in the caller's main `ci.yml`. Doing so re-races the label-strip workflow and can allow a malicious commit to inherit a prior label's authorization.
+- Gate fork-PR acceptance on the labeling event (`github.event.action == 'labeled' && github.event.label.name == 'allowed-for-ci'`), **never** on `contains(github.event.pull_request.labels.*.name, 'allowed-for-ci')`. A `synchronize` or `reopened` payload still carries a label applied to an earlier commit, so a presence check lets a new, unreviewed commit inherit the prior authorisation. With the event gate, `synchronize` and `closed` can safely trigger `ci.yml` to run the label guard.
+- Key the caller's concurrency group on the PR number, not `github.ref`: on `pull_request_target`, `github.ref` is the base branch, so a shared group lets one PR's events cancel another PR's acceptance.
 - Do **not** pass `secrets: inherit` to the `Spec` track. It runs on `pull_request` (untrusted) and must have no secrets in scope.
 - Do **not** widen the trigger from `pull_request_target` to include user-controlled refs other than the PR head SHA pinned by the reusable workflow.
 - The label name `allowed-for-ci` is a contract; changing it requires updating the reusable workflow's `if:` expressions and the label-guard's input.

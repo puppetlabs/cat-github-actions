@@ -5,12 +5,12 @@ on:
   pull_request:
     branches:
       - "main"
-  # Trusted private track: acceptance runs with secrets, gated by label for
-  # fork PRs. `synchronize` is intentionally omitted to avoid racing with
-  # fork_ci_label_guard.yml; new commits must be re-labelled by a CODEOWNER
-  # to re-trigger acceptance.
+  # Trusted private track: acceptance runs with secrets, gated for fork PRs on
+  # the `allowed-for-ci` labeling event itself. `synchronize` and `closed` only
+  # run the label guard below, which strips the label so new commits must be
+  # re-labelled by a CODEOWNER to re-trigger acceptance.
   pull_request_target:
-    types: [labeled, reopened]
+    types: [labeled, reopened, synchronize, closed]
     branches:
       - "main"
   workflow_dispatch:
@@ -19,7 +19,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # On pull_request_target, github.ref is the base branch, so key on the PR number
+  # (and the event) to keep runs of different PRs from cancelling each other. A new
+  # commit or a close cancels that PR's running acceptance; adding any other label
+  # gets its own group so it doesn't.
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}-${{ github.event.action == 'labeled' && github.event.label.name != 'allowed-for-ci' && github.run_id || 'ci' }}
   cancel-in-progress: true
 
 jobs:
@@ -28,11 +32,26 @@ jobs:
     uses: "puppetlabs/cat-github-actions/.github/workflows/module_ci.yml@main"
     # No `secrets: inherit` — public track must not see private secrets.
 
+  # Fork PRs need the `allowed-for-ci` labeling event, not just the label: a
+  # `synchronize` payload still carries the label until the guard strips it.
   Acceptance:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'pull_request_target' &&
-       (github.event.pull_request.head.repo.fork == false ||
-        contains(github.event.pull_request.labels.*.name, 'allowed-for-ci')))
+       ((github.event.pull_request.head.repo.fork == false &&
+         (github.event.action == 'labeled' || github.event.action == 'reopened')) ||
+        (github.event.pull_request.head.repo.fork == true &&
+         github.event.action == 'labeled' &&
+         github.event.label.name == 'allowed-for-ci')))
     uses: "puppetlabs/cat-github-actions/.github/workflows/module_acceptance.yml@main"
     secrets: "inherit"
+
+  # Strips allowed-for-ci on new commits and closes, so each fork-PR acceptance run
+  # needs a fresh label from a CODEOWNER.
+  Fork_CI_Label_Guard:
+    if: >-
+      github.event_name == 'pull_request_target' &&
+      (github.event.action == 'synchronize' || github.event.action == 'closed')
+    uses: "puppetlabs/cat-github-actions/.github/workflows/fork_ci_label_guard.yml@main"
+    permissions:
+      pull-requests: write
