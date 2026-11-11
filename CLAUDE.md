@@ -54,7 +54,8 @@ The workflows split along two product lines and a lifecycle:
 Cross-cutting workflows:
 
 - [lint.yml](.github/workflows/lint.yml) — the **only** workflow that runs on
-  this repo's own pushes/PRs (not `workflow_call`); yamllints `.github/`.
+  this repo's own pushes/PRs (not `workflow_call`); yamllints `.github/` and runs
+  the tests under [tests/](tests/).
 - [claude-pr.yml](.github/workflows/claude-pr.yml) — auto PR review (see below).
 - [fork_ci_label_guard.yml](.github/workflows/fork_ci_label_guard.yml) — part of
   the fork-PR security model (see below).
@@ -106,10 +107,15 @@ exact commits**.
 
 ## Linting
 
-CI lints YAML only. To reproduce locally:
+CI yamllints `.github/` and runs the tests under [tests/](tests/). To reproduce
+locally:
 
 ```bash
 yamllint -c .yamllint .github/
+```
+
+```bash
+tests/module_release_prep/test_changelog_guard.sh  # needs python3 with PyYAML
 ```
 
 Config: [.yamllint](.yamllint) extends `default` and disables `document-start`,
