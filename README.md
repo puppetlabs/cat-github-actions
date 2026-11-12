@@ -18,6 +18,7 @@ The following are the workflows we currently maintain in this repository:
 * module_release_prep: prepares the module for release by running necessary pre-release checks and tasks, keeping the sections of previously released versions in `CHANGELOG.md` intact when it is regenerated. It fails on an invalid version, and when the regenerated changelog is missing, has no version sections or does not start with the requested version, or when the existing history cannot be restored. A committed `Unreleased` section is dropped, with a warning
 * module_release: handles the release process of the module, including versioning and publishing
 * tooling_mend_ruby: automates the usage of mend for vulnerability scanning on tools
+* tests: runs this repository's own tests under `tests/` on pushes and PRs (not reusable)
 * workflow-restarter-test: tests the workflow restarter functionality
 * workflow-restarter: restarts workflows that have failed or need to be re-run
 

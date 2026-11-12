@@ -1,0 +1,25 @@
+name: "tests"
+
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+    branches:
+      - "main"
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: "ubuntu-latest"
+    steps:
+
+      - name: "Checkout"
+        uses: "actions/checkout@v4"
+
+      - name: "Test module_release_prep changelog preservation"
+        run: |
+          python3 -c 'import yaml' 2> /dev/null || { sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends python3-yaml; }
+          bash tests/module_release_prep/test_changelog_guard.sh
