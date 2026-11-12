@@ -155,8 +155,18 @@ sed 's/$/\r/' "$fx/generated.md" > "$fx/generated_crlf.md"
 sed 's/$/\r/' "$fx/expected.md" > "$fx/expected_crlf.md"
 run_case "CRLF files keep their history" "$fx/old_crlf.md" "$fx/generated_crlf.md" "$fx/expected_crlf.md"
 
-# No committed CHANGELOG.md: nothing to protect, generated file is left alone.
+# No committed CHANGELOG.md: nothing to protect, a valid generated file is left alone.
 run_case "no committed changelog leaves generated file untouched" "-" "$fx/generated.md" "$fx/generated.md" pass "nothing to preserve"
+
+# The generated file is validated even when there is no history to restore.
+printf '%s\n' "$preamble" > "$fx/generated_nosections.md"
+case_version=3.40.0
+run_case "no committed changelog and wrong generated version fails" "-" "$fx/generated.md" "$fx/generated.md" fail "refusing to prepare a release"
+run_case "no committed changelog and generated file without sections fails" "-" "$fx/generated_nosections.md" "$fx/generated_nosections.md" fail "no version sections"
+printf '# Changelog\n' > "$fx/old_titleonly.md"
+run_case "title-only committed changelog and wrong generated version fails" "$fx/old_titleonly.md" "$fx/generated.md" "$fx/generated.md" fail "refusing to prepare a release"
+run_case "title-only committed changelog and generated file without sections fails" "$fx/old_titleonly.md" "$fx/generated_nosections.md" "$fx/generated_nosections.md" fail "no version sections"
+case_version=3.39.0
 
 # Committed file without any "## " sections: leave generated file alone.
 printf '# Changelog\n' > "$fx/old_empty.md"
@@ -166,12 +176,11 @@ run_case "committed changelog without sections leaves generated file untouched" 
 printf '# Changelog\n\n# 3.38.3\n\n- thing\n' > "$fx/old_h1.md"
 run_case "committed changelog with h1 sections fails" "$fx/old_h1.md" "$fx/generated.md" "$fx/generated.md" fail "refusing to drop its history"
 
-# Generator produced no sections while history exists: fail instead of shipping a
-# changelog without history.
+# A generated changelog without version sections fails, whatever is committed.
 printf '# Changelog\n' > "$fx/generated_empty.md"
-run_case "generated changelog without sections fails" "$fx/old.md" "$fx/generated_empty.md" "$fx/generated_empty.md" fail "refusing to drop the committed history"
+run_case "generated changelog without sections fails" "$fx/old.md" "$fx/generated_empty.md" "$fx/generated_empty.md" fail "no version sections"
 : > "$fx/generated_blank.md"
-run_case "empty generated changelog fails" "$fx/old.md" "$fx/generated_blank.md" "$fx/generated_blank.md" fail "refusing to drop the committed history"
+run_case "empty generated changelog fails" "$fx/old.md" "$fx/generated_blank.md" "$fx/generated_blank.md" fail "no version sections"
 
 # CRLF where the generated section does not end in a blank line: the separator
 # uses CRLF too.
@@ -189,8 +198,8 @@ run_case "only the prepared version committed" "$fx/old_only_new.md" "$fx/genera
 # The generator emitted no section for the requested version: its newest section
 # is a rewritten release, so the step fails and leaves the generated file alone.
 case_version=3.40.0
-run_case "no generated section for the requested version fails" "$fx/old.md" "$fx/generated.md" "$fx/generated.md" fail "refusing to rewrite the released history"
-for bad in "" "3.39.0; id" ";x 3.39.0" "1/;e id #" "3.39.0-a/b" "3.39.0-a&b" "latest" "3.39." "3x39.0" "3.39.0-" $'3.39.0\n/;e id #' $'3.39.0\n'; do
+run_case "no generated section for the requested version fails" "$fx/old.md" "$fx/generated.md" "$fx/generated.md" fail "refusing to prepare a release"
+for bad in "" "3.39.0; id" ";x 3.39.0" "1/;e id #" "3.39.0-a/b" "3.39.0-a&b" "latest" "3.39." "3x39.0" "3.39.0-" "3.39.0+" "3.39.0-rc.1+" "3.39.0+a+b" "3.39.0-+b" $'3.39.0\n/;e id #' $'3.39.0\n'; do
   case_version=$bad
   shown=${bad//$'\n'/\\n}
   run_case "invalid version '$shown' fails" "$fx/old.md" "$fx/generated.md" "$fx/generated.md" fail "Invalid version"
@@ -233,12 +242,12 @@ run_case "CRLF bare headers for Unreleased and the prepared version are dropped"
 printf '%s\n%s\n%s\n' "$preamble" "$s_unreleased" "$s_old3" > "$fx/generated_unreleased.md"
 run_case "generated Unreleased section on top fails" "$fx/old.md" "$fx/generated_unreleased.md" "$fx/generated_unreleased.md" fail "Newest generated section is Unreleased"
 
-# Pre-release versions are accepted.
+# Pre-release and build-metadata versions are accepted.
 sed 's/^## \[v3.39.0\]/## [v3.39.0-rc.1]/' "$fx/generated.md" > "$fx/generated_rc.md"
 sed 's/^## \[v3.39.0\]/## [v3.39.0-rc.1]/' "$fx/expected.md" > "$fx/expected_rc.md"
 case_version=3.39.0-rc.1
 run_case "pre-release version is accepted" "$fx/old.md" "$fx/generated_rc.md" "$fx/expected_rc.md"
-for okv in 3.39.0+build.5 3.39.0-RC-1 3; do
+for okv in 3.39.0+build.5 3.39.0-RC-1 3 3.39.0-rc.1+build.5; do
   sed "s/^## \[v3.39.0\]/## [v$okv]/" "$fx/generated.md" > "$fx/generated_ok.md"
   sed "s/^## \[v3.39.0\]/## [v$okv]/" "$fx/expected.md" > "$fx/expected_ok.md"
   case_version=$okv

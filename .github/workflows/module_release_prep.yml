@@ -46,19 +46,36 @@ jobs:
       # rewrites and backfills sections of versions that were already released.
       # Keep the generated preamble and newest section, and append the sections
       # of previously released versions from the committed CHANGELOG.md. The step
-      # fails rather than lose history when the version is not a plain version,
-      # the generated file is unusable, its newest section is not the requested
-      # version, or the committed file has headings that cannot be restored.
+      # fails when the version is not a valid version (optional pre-release and
+      # build suffixes), when the generated file is unusable or its newest section
+      # is not the requested version, or when the committed file has headings that
+      # cannot be restored, which would lose history.
       - name: "Preserve changelog history"
         env:
           VERSION: ${{ inputs.version }}
         run: |
-          # Reject anything but a plain version, which also keeps it safe to use in
-          # the sed expression of the "Update metadata.json" step
-          if [[ "$VERSION" == *$'\n'* ]] || ! [[ "$VERSION" =~ ^v?[0-9]+(\.[0-9]+)*([-+][0-9A-Za-z.-]+)?$ ]]; then
+          # Reject anything but a version with optional pre-release and build
+          # suffixes, which also keeps it safe to use in the sed expression of
+          # the "Update metadata.json" step
+          if [[ "$VERSION" == *$'\n'* ]] || ! [[ "$VERSION" =~ ^v?[0-9]+(\.[0-9]+)*(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
             echo "::error::Invalid version"
             exit 1
           fi
+          # The generated file must be usable whatever is committed, because
+          # metadata.json is bumped to this version afterwards
+          if [ ! -f CHANGELOG.md ] || ! grep -q '^## \[' CHANGELOG.md; then
+            echo "::error::Generated CHANGELOG.md is missing or has no version sections"
+            exit 1
+          fi
+
+          version=${VERSION#v}
+          # Version of a "## [vX.Y.Z](url) - date" header, without the "v"
+          top_version=$(grep -m1 '^## \[' CHANGELOG.md | sed 's/^## \[v\{0,1\}\([^]]*\)\].*/\1/')
+          if [ "$top_version" != "$version" ]; then
+            echo "::error::Newest generated section is $top_version, not $version, refusing to prepare a release without its changelog section"
+            exit 1
+          fi
+
           # git ls-tree prints nothing when the file is untracked and fails on a real git error
           tracked=$(git ls-tree --name-only HEAD -- CHANGELOG.md)
           if [ -z "$tracked" ]; then
@@ -83,19 +100,6 @@ jobs:
             echo "::warning::Committed CHANGELOG.md has no '## ' sections, leaving generated CHANGELOG.md as is"
             exit 0
           fi
-          if [ ! -f CHANGELOG.md ] || ! grep -q '^## \[' CHANGELOG.md; then
-            echo "::error::Generated CHANGELOG.md is missing or has no version sections, refusing to drop the committed history"
-            exit 1
-          fi
-
-          version=${VERSION#v}
-          # Version of a "## [vX.Y.Z](url) - date" header, without the "v"
-          top_version=$(grep -m1 '^## \[' CHANGELOG.md | sed 's/^## \[v\{0,1\}\([^]]*\)\].*/\1/')
-          if [ "$top_version" != "$version" ]; then
-            echo "::error::Newest generated section is $top_version, not $version, refusing to rewrite the released history"
-            exit 1
-          fi
-
           # Generated preamble and newest section
           awk '/^## \[/ { n++ } n < 2' CHANGELOG.md > "$merged"
 
